@@ -148,8 +148,8 @@ def run_simulation(landscape, timesteps=100, r=0.5, K=50, m=0.05,
     return pop, history
     
 
-def plot_landscape(landscape, K):
-    plt.imshow(landscape, vmin=0, vmax=K, cmap='viridis') #cmap max is carrying capacity
+def plot_landscape(popArray, K):
+    plt.imshow(popArray, vmin=0, vmax=K, cmap='viridis') #cmap max is carrying capacity
     plt.colorbar(label='Population')
     plt.show()
     
