@@ -83,13 +83,13 @@ def run_simulation(landscape, timesteps=100, r=0.5, K=50, m=0.05,
     pop = np.zeros((L, L)) # create a population array matching landscape
     pop[landscape] = K*0.2 #start at a fraction of carrying capacity
     
-    #find habitats using ndimage
-    habitatArrays, numHabitats = ndimage.label(landscape)
+    #find reserves using ndimage
+    reserveArrays, numReserves = ndimage.label(landscape)
     
     history = {
         'total_pop': [], #total population
-        'occupancy': [],  # fraction of habitat cells with pop > 1
-        'num_occupied_habitats': []
+        'occupancy': [],  # fraction of reserve cells with pop > 1
+        'num_occupied_reserves': []
     }
     
     #kernel for immigration, with decreasing likelihood (Gaussian distrib) the further out we go
@@ -119,16 +119,16 @@ def run_simulation(landscape, timesteps=100, r=0.5, K=50, m=0.05,
         dispersed = fftconvolve(emigrants, dispersal_kernel, mode='same')
         
         pop += dispersed #add immigrants to their new home cells
-        pop[~landscape] = 0 #species can only survive in habitat
+        pop[~landscape] = 0 #species can only survive in reserve
         
         
         #randomly check if there will be a disturbance based on our rate (0-1)
         if np.random.rand() < disturbance_rate:
-            habitat_coords = np.argwhere(landscape) #check for habitat cells
-            #disturbance applies to a certain percent of the habitat cells
-            numDisturbed = int(disturbance_extent * len(habitat_coords)) 
-            disturbed_idx = np.random.choice(len(habitat_coords), numDisturbed, replace = False)
-            disturbed = habitat_coords[disturbed_idx]
+            reserve_coords = np.argwhere(landscape) #check for reserve cells
+            #disturbance applies to a certain percent of the reserve cells
+            numDisturbed = int(disturbance_extent * len(reserve_coords)) 
+            disturbed_idx = np.random.choice(len(reserve_coords), numDisturbed, replace = False)
+            disturbed = reserve_coords[disturbed_idx]
 
             pop[disturbed] *= (1 - disturbance_severity)
         
@@ -136,17 +136,16 @@ def run_simulation(landscape, timesteps=100, r=0.5, K=50, m=0.05,
         history['total_pop'].append(float(pop.sum()))
         history['occupancy'].append(float((pop[landscape]>1).sum() / landscape.sum()))
         
-        occupiedHabitat = 0
-        for i in range(1, numHabitats + 1):
-            if pop[habitatArrays == i].sum() > 10:
-                occupiedHabitat += 1
-        history['num_occupied_habitats'].append(occupiedHabitat)
+        occupiedReserve = 0
+        for i in range(1, numReserves + 1):
+            if pop[reserveArrays == i].sum() > 10:
+                occupiedReserve += 1
+        history['num_occupied_reserves'].append(occupiedReserve)
         
         if ploteachtimestep:
             plot_landscape(pop, K)
         
     return pop, history
-    
     
 
 def plot_landscape(landscape, K):
@@ -162,12 +161,12 @@ def plot_statistics_over_time(history):
     plt.show()
     
     plt.plot(history['occupancy'])
-    plt.title("Total Habitat Cell Occupancy over Time")
+    plt.title("Total reserve Cell Occupancy over Time")
     plt.xlabel("Timestep")
     plt.show()
     
-    plt.plot(history['num_occupied_habitats'])
-    plt.title("Total Num Habitats Occupied over Time")
+    plt.plot(history['num_occupied_reserves'])
+    plt.title("Total Num reserves Occupied over Time")
     plt.xlabel("Timestep")
     plt.show()
 
