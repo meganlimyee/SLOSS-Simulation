@@ -1,5 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy import ndimage
+from scipy.signal import fftconvolve
 
 
 def create_landscape(L=50, total_area=100, num_reserves=1):
@@ -32,7 +34,6 @@ def create_landscape(L=50, total_area=100, num_reserves=1):
             landscape[top:top+reserveSide, left:left+reserveSide] = True
             numReservesPlaced += 1        
         attempts += 1
-    
     
     #extra space that was not able to fit in the squares
     extraSpace = total_area-num_reserves*reserveSide**2
@@ -75,19 +76,117 @@ def create_landscape(L=50, total_area=100, num_reserves=1):
 
     return landscape
 
-def plot_landscape(landscape):
-    plt.imshow(landscape)
+def run_simulation(landscape, timesteps=100, r=0.5, K=50, m=0.05, 
+                   disturbance_rate=0.01, disturbance_severity=0.5, 
+                   disturbance_extent=0.1, traveldist=10, ploteachtimestep=False):
+    L = landscape.shape[0]
+    pop = np.zeros((L, L)) # create a population array matching landscape
+    pop[landscape] = K*0.2 #start at a fraction of carrying capacity
+    
+    #find habitats using ndimage
+    habitatArrays, numHabitats = ndimage.label(landscape)
+    
+    history = {
+        'total_pop': [], #total population
+        'occupancy': [],  # fraction of habitat cells with pop > 1
+        'num_occupied_habitats': []
+    }
+    
+    #kernel for immigration, with decreasing likelihood (Gaussian distrib) the further out we go
+    kernelSize = int(6 * 10)
+    #ensure odd kernel side length so our original cell is at the center
+    if kernelSize % 2 == 0:
+        kernelSize += 1
+    center = kernelSize // 2 #find the center
+    
+    # Gaussian kernel
+    y, x = np.ogrid[-center:center+1, -center:center+1]
+    dispersal_kernel = np.exp(-(x**2 + y**2) / (2 * traveldist**2))
+    #normalize so sum of probabilities equals 1
+    dispersal_kernel = dispersal_kernel / dispersal_kernel.sum()
+    
+    #repeat process of growth, immigration, disturbance for timesteps
+    for t in range(timesteps):
+        #logistic growth of population in each cell
+        pop[landscape] = pop[landscape] + r*pop[landscape] * (1-pop[landscape]/K)    
+        pop = np.clip(pop, 0, None) #disallow negative populations
+        
+        #individuals moving
+        emigrants = pop * m #how many individuals are leaving from each cell
+        pop = pop * (1 - m) #each cell's base population decreases as some leave
+        
+        #immigrants move according to Gaussian kernel
+        dispersed = fftconvolve(emigrants, dispersal_kernel, mode='same')
+        
+        pop += dispersed #add immigrants to their new home cells
+        pop[~landscape] = 0 #species can only survive in habitat
+        
+        
+        #randomly check if there will be a disturbance based on our rate (0-1)
+        if np.random.rand() < disturbance_rate:
+            habitat_coords = np.argwhere(landscape) #check for habitat cells
+            #disturbance applies to a certain percent of the habitat cells
+            numDisturbed = int(disturbance_extent * len(habitat_coords)) 
+            disturbed_idx = np.random.choice(len(habitat_coords), numDisturbed, replace = False)
+            disturbed = habitat_coords[disturbed_idx]
+
+            pop[disturbed] *= (1 - disturbance_severity)
+        
+        
+        history['total_pop'].append(float(pop.sum()))
+        history['occupancy'].append(float((pop[landscape]>1).sum() / landscape.sum()))
+        
+        occupiedHabitat = 0
+        for i in range(1, numHabitats + 1):
+            if pop[habitatArrays == i].sum() > 10:
+                occupiedHabitat += 1
+        history['num_occupied_habitats'].append(occupiedHabitat)
+        
+        if ploteachtimestep:
+            plot_landscape(pop, K)
+        
+    return pop, history
+    
+    
+
+def plot_landscape(landscape, K):
+    plt.imshow(landscape, vmin=0, vmax=K, cmap='viridis') #cmap max is carrying capacity
+    plt.colorbar(label='Population')
+    plt.show()
+    
+def plot_statistics_over_time(history):
+    plt.plot(history['total_pop'])
+    plt.title("Total Population over Time")
+    plt.xlabel("Timestep")
+    plt.ylabel("Population")
+    plt.show()
+    
+    plt.plot(history['occupancy'])
+    plt.title("Total Habitat Cell Occupancy over Time")
+    plt.xlabel("Timestep")
+    plt.show()
+    
+    plt.plot(history['num_occupied_habitats'])
+    plt.title("Total Num Habitats Occupied over Time")
+    plt.xlabel("Timestep")
     plt.show()
 
 if __name__ == "__main__":
+    K=50
     #single large
     landscape = create_landscape()
-    plot_landscape(landscape)
+    pop, history = run_simulation(landscape, ploteachtimestep=False)
+    plot_landscape(pop, K)   
+    plot_statistics_over_time(history)
     
     #several small
     landscape = create_landscape(num_reserves = 10)
-    plot_landscape(landscape)
+    pop, history = run_simulation(landscape, ploteachtimestep=False)
+    plot_landscape(pop, K)   
+    plot_statistics_over_time(history)
     
     #several medium
     landscape = create_landscape(num_reserves = 3)
-    plot_landscape(landscape)
+    pop, history = run_simulation(landscape, ploteachtimestep=False, disturbance_rate=0.9, disturbance_extent=0.9)
+    plot_landscape(pop, K)   
+    plot_statistics_over_time(history)
