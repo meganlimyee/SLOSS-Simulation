@@ -2,8 +2,31 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy import ndimage
 from scipy.signal import fftconvolve
+import os
+import sys
+
+"""
+Notes on the program:
+Ecology simulation exploring the classic SLOSS ( "Single Large Or Several Small" reserves) debate.
+If total protected habitat area is the same, is it better to protect one large area or several smaller areas?
+Build a landscape, place habiat reserves, and simulate polulations living in those reserves over time based on
+population growth, emigration, and disturbances.
 
 
+"""
+
+
+
+"""
+Create a landscape, marking reserve habitat cells as True and non-reserve cells as
+False. 
+If multiple habitat areas, he landscape includes a few well-separated habitat patches of roughly equal size.
+
+Params:
+total_area (int): total area of reserve habitat
+num_reserves (int) : distinct number of reserves
+
+"""
 def create_landscape(L=50, total_area=100, num_reserves=1):
     #create empty np array for landscape and reserves
     landscape = np.zeros((L, L), dtype=bool)
@@ -76,6 +99,24 @@ def create_landscape(L=50, total_area=100, num_reserves=1):
 
     return landscape
 
+
+"""
+Run population dynamics.
+
+Reserve geometry matters because small-scattered reserves lose mroe dispersers to non-habitat, 
+but also might receive rescue immigrants from neighbors.
+
+
+r: polutation growth rate
+K: carrying population capacity per reserve cell
+m: migration rate (# individuals leaving each cell per timestep)
+disturbance_rate: % chance of disturbance per timestep 
+disturbance_severity: % indivuduals removed in affected cells
+disturbance_extent: % of reserve cells affected
+traveldist: distance that individuls disperse
+
+"""
+
 def run_simulation(landscape, timesteps=100, r=0.5, K=50, m=0.05, 
                    disturbance_rate=0.01, disturbance_severity=0.5, 
                    disturbance_extent=0.1, traveldist=10, ploteachtimestep=False):
@@ -83,7 +124,8 @@ def run_simulation(landscape, timesteps=100, r=0.5, K=50, m=0.05,
     pop = np.zeros((L, L)) # create a population array matching landscape
     pop[landscape] = K*0.2 #start at a fraction of carrying capacity
     
-    #find reserves using ndimage
+    # find reserves using ndimage
+    # ndimage identifies connected reserve patches to track how many separate reserves are occupied (>10)
     reserveArrays, numReserves = ndimage.label(landscape)
     
     history = {
@@ -107,24 +149,33 @@ def run_simulation(landscape, timesteps=100, r=0.5, K=50, m=0.05,
     
     #repeat process of growth, immigration, disturbance for timesteps
     for t in range(timesteps):
-        #logistic growth of population in each cell
+
+        #1. Logistic growth of  ulation in each cell (standard-density growth equation)
+        # population grows towareeds carrying capacity
         pop[landscape] = pop[landscape] + r*pop[landscape] * (1-pop[landscape]/K)    
         pop = np.clip(pop, 0, None) #disallow negative populations
         
-        #individuals moving
+        #2. Dispersal
+        # a fraction of each reserve's population emigrates, getting redistributed across grid via convolution
+        # with Gaussian kernel.
         emigrants = pop * m #how many individuals are leaving from each cell
         pop = pop * (1 - m) #each cell's base population decreases as some leave
         
-        #immigrants move according to Gaussian kernel
+        #immigrants move into nearby cells according to Gaussian kernel
         dispersed = fftconvolve(emigrants, dispersal_kernel, mode='same')
         
         pop += dispersed #add immigrants to their new home cells
         pop[~landscape] = 0 #species can only survive in reserve
         
         
+        # 3. Disturbance
+        # with some chance (per timestep), random fraction of reserve cells are impacted.
+        # this models disturbances such as fires, stormes, diseases, etc.
+
         #randomly check if there will be a disturbance based on our rate (0-1)
         if np.random.rand() < disturbance_rate:
-            reserve_coords = np.argwhere(landscape) #check for reserve cells
+            reserve_coords = np.argwhere(landscape) #check for reserve cells (marked True)
+            
             #disturbance applies to a certain percent of the reserve cells
             numDisturbed = int(disturbance_extent * len(reserve_coords)) 
             disturbed_idx = np.random.choice(len(reserve_coords), numDisturbed, replace = False)
@@ -148,34 +199,59 @@ def run_simulation(landscape, timesteps=100, r=0.5, K=50, m=0.05,
     return pop, history
     
 
-def plot_landscape(popArray, K):
-    plt.imshow(popArray, vmin=0, vmax=K, cmap='viridis') #cmap max is carrying capacity
+# same as plot_landcape but save plots to folder
+def plot_landscape(popArray, K, save_path=None):
+    plt.imshow(popArray, vmin=0, vmax=K, cmap='viridis')  #cmap max is carrying capacity
     plt.colorbar(label='Population')
-    plt.show()
     
-def plot_statistics_over_time(history):
+    if save_path:
+        plt.savefig(save_path)
+        plt.close()
+    else:
+        plt.show()
+
+
+def plot_statistics_over_time(history, folder=None):
+    
+    # Total population
     plt.plot(history['total_pop'])
     plt.title("Total Population over Time")
     plt.xlabel("Timestep")
     plt.ylabel("Population")
-    plt.show()
-    
-    plt.plot(history['occupancy'])
-    plt.title("Total reserve Cell Occupancy over Time")
-    plt.xlabel("Timestep")
-    plt.show()
-    
-    plt.plot(history['num_occupied_reserves'])
-    plt.title("Total Num reserves Occupied over Time")
-    plt.xlabel("Timestep")
-    plt.show()
+    if folder:
+        plt.savefig(os.path.join(folder, "total_population.png"))
+        plt.close()
+    else:
+        plt.show()
 
-if __name__ == "__main__":
+    # Occupancy
+    plt.plot(history['occupancy'])
+    plt.title("Reserve Cell Occupancy over Time")
+    plt.xlabel("Timestep")
+    if folder:
+        plt.savefig(os.path.join(folder, "occupancy.png"))
+        plt.close()
+    else:
+        plt.show()
+
+    # Number of occupied reserves
+    plt.plot(history['num_occupied_reserves'])
+    plt.title("Number of Occupied Reserves")
+    plt.xlabel("Timestep")
+    if folder:
+        plt.savefig(os.path.join(folder, "occupied_reserves.png"))
+        plt.close()
+    else:
+        plt.show()
+
+
+# display results (origina main call)
+def main_default():
     K=50
     #single large
     landscape = create_landscape()
     pop, history = run_simulation(landscape, ploteachtimestep=False)
-    plot_landscape(pop, K)   
+    plot_landscape(pop, K) 
     plot_statistics_over_time(history)
     
     #several small
@@ -189,3 +265,44 @@ if __name__ == "__main__":
     pop, history = run_simulation(landscape, ploteachtimestep=False, disturbance_rate=0.9, disturbance_extent=0.9)
     plot_landscape(pop, K)   
     plot_statistics_over_time(history)
+
+
+# run this one to save results in a folder in directory
+def main_download():
+    K = 50
+
+    base_dir = os.getcwd()  # current directory where script is run
+
+    scenarios = [
+        ("single_large", dict(num_reserves=1), dict(disturbance_rate=0.1, disturbance_extent=0.3)),
+        ("several_small", dict(num_reserves=10), dict(disturbance_rate=0.1, disturbance_extent=0.3)),
+        ("several_medium", dict(num_reserves=3), dict(disturbance_rate=0.1, disturbance_extent=0.3))
+    ]
+
+    for name, landscape_args, sim_args in scenarios:
+        folder = os.path.join(base_dir, name)
+        os.makedirs(folder, exist_ok=True)
+
+        # create landscape
+        landscape = create_landscape(**landscape_args)
+
+        # run simulation
+        pop, history = run_simulation(landscape, ploteachtimestep=False, **sim_args)
+
+        # save landscape image
+        plot_landscape(pop, K, save_path=os.path.join(folder, "final_landscape.png"))
+
+        # save stats plots
+        plot_statistics_over_time(history, folder=folder)
+
+
+if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        if sys.argv[1] == "download":
+            main_download()
+        else:
+            print("unknown argument: plotting results.")
+            main_default()
+    else:
+        main_default()
+
