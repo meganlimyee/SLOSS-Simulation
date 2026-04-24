@@ -181,7 +181,8 @@ def run_simulation(landscape, timesteps=100, r=0.5, K=50, m=0.05,
             disturbed_idx = np.random.choice(len(reserve_coords), numDisturbed, replace = False)
             disturbed = reserve_coords[disturbed_idx]
 
-            pop[disturbed] *= (1 - disturbance_severity)
+            #pop[disturbed] *= (1 - disturbance_severity)
+            pop[disturbed[:, 0], disturbed[:, 1]] *= (1 - disturbance_severity)
         
         
         history['total_pop'].append(float(pop.sum()))
@@ -273,10 +274,14 @@ def main_download():
 
     base_dir = os.getcwd()  # current directory where script is run
 
+    # to make num_reserves independent var for comparison accross different cases of habitat distribution
+    rate = 1.0
+    extent = 0.9
+
     scenarios = [
-        ("single_large", dict(num_reserves=1), dict(disturbance_rate=0.1, disturbance_extent=0.3)),
-        ("several_small", dict(num_reserves=10), dict(disturbance_rate=0.1, disturbance_extent=0.3)),
-        ("several_medium", dict(num_reserves=3), dict(disturbance_rate=0.1, disturbance_extent=0.3))
+        ("single_large", dict(num_reserves=1), dict(disturbance_rate=rate, disturbance_extent=extent)),
+        ("several_small", dict(num_reserves=10), dict(disturbance_rate=rate, disturbance_extent=extent)),
+        ("several_medium", dict(num_reserves=3), dict(disturbance_rate=rate, disturbance_extent=extent))
     ]
 
     for name, landscape_args, sim_args in scenarios:
