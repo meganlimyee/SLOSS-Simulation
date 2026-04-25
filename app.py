@@ -42,7 +42,8 @@ from sim_streamlit import create_landscape, run_simulation
 
 
 @st.cache_data(show_spinner=False)
-def simulate_cached(num_reserves: int, traveldist: float,
+def simulate_cached(num_reserves: int, r: float, K: float,
+                    m: float, traveldist: float,
                     disturbance_rate: float, disturbance_extent: float,
                     disturbance_severity: float,
                     run_counter: int, use_seed: bool):
@@ -54,6 +55,7 @@ def simulate_cached(num_reserves: int, traveldist: float,
     landscape = create_landscape(num_reserves=num_reserves)
     pop_history, history = run_simulation(
         landscape,
+        r=r, K=K, m=m,
         traveldist=traveldist,
         disturbance_rate=disturbance_rate,
         disturbance_extent=disturbance_extent,
@@ -89,7 +91,29 @@ with ctrl_col:
         min_value=1, max_value=20, value=1, step=1,
         help="TODO: DESCRIPTION",
     )
+    
+    st.markdown("**Logistic Growth Parameters**")
 
+    r = st.slider(
+        "Growth Rate",
+        min_value=0.05, max_value=3.0, value=0.05, step=0.05,
+        help="TODO: DESCRIPTION",
+    )
+
+    K = st.slider(
+        "Carrying Capacity per Cell",
+        min_value=5, max_value=100, value=10, step=1,
+        help="TODO: DESCRIPTION",
+    )
+    
+    st.markdown("**Migration Parameters**")
+
+    m = st.slider(
+        "Percent of individuals migrating per cell per timestep",
+        min_value=0.0, max_value=1.0, value=0.05, step=0.05,
+        help="TODO: DESCRIPTION",
+    )
+    
     traveldist = st.slider(
         "Dispersal distance σ",
         min_value=1.0, max_value=20.0, value=10.0, step=0.5,
@@ -139,7 +163,7 @@ st.session_state.fresh_run = False
 # detect parameter changes; when the user changes a parameter, we want the
 # scrubber to snap to the final timestep of the new run rather than stay
 # wherever it was in the previous run's history
-current_params = (num_reserves, traveldist, disturbance_rate,
+current_params = (num_reserves, r, K, m, traveldist, disturbance_rate,
                   disturbance_extent, disturbance_severity,
                   st.session_state.run_counter)
 if st.session_state.last_params != current_params:
@@ -147,7 +171,7 @@ if st.session_state.last_params != current_params:
     st.session_state.last_params = current_params
 
 landscape, pop_history, history = simulate_cached(
-    num_reserves=num_reserves,
+    num_reserves=num_reserves, r=r, K=K, m=m,
     traveldist=traveldist,
     disturbance_rate=disturbance_rate,
     disturbance_extent=disturbance_extent,
@@ -176,7 +200,6 @@ with viz_col:
     st.session_state.timestep = timestep
 
     pop_at_t = pop_history[timestep]
-    K = 50  # carrying capacity, matches simulation default
 
     fig = go.Figure(
         data=go.Heatmap(
