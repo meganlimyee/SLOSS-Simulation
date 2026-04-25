@@ -19,8 +19,9 @@ Iteration 2: timestep scrubber
 
 Future iterations could implement:
 - time-series plots with synchronized playhead
-- primary/advanced parameter panels
+- advanced parameter panels
 - presets to simulate realistic conditions (to learn important aspects of SLOSS)
+    - currently it is free parameter exploration, it may be hard to grasp SLOSS effects
 
 """
 
@@ -41,16 +42,25 @@ from sim_streamlit import create_landscape, run_simulation
 
 
 @st.cache_data(show_spinner=False)
-def simulate_cached(num_reserves: int, run_counter: int, use_seed: bool):
+def simulate_cached(num_reserves: int, traveldist: float,
+                    disturbance_rate: float, disturbance_extent: float,
+                    disturbance_severity: float,
+                    run_counter: int, use_seed: bool):
     #Run a full simulation cached on its arguments
     seed = 42 if use_seed else None
     # create_landscape also uses np.random so seeding here makes the whole pipeline reproducible
     if seed is not None:
         np.random.seed(seed)
     landscape = create_landscape(num_reserves=num_reserves)
-    pop_history, history = run_simulation(landscape, seed=seed)
+    pop_history, history = run_simulation(
+        landscape,
+        traveldist=traveldist,
+        disturbance_rate=disturbance_rate,
+        disturbance_extent=disturbance_extent,
+        disturbance_severity=disturbance_severity,
+        seed=seed,
+    )
     return landscape, pop_history, history
-
 
 
 ############# Page setup ########################
@@ -73,11 +83,40 @@ viz_col, ctrl_col = st.columns([2, 1])
 
 with ctrl_col:
     st.subheader("Controls")
+
     num_reserves = st.slider(
         "Number of reserves",
-        min_value=1, max_value=25, value=1, step=1,
-        help="Total habitat area is held constant. Toggle to change its distribution.",
+        min_value=1, max_value=20, value=1, step=1,
+        help="TODO: DESCRIPTION",
     )
+
+    traveldist = st.slider(
+        "Dispersal distance σ",
+        min_value=1.0, max_value=20.0, value=10.0, step=0.5,
+        help="TODO: DESCRIPTION",
+    )
+
+    st.markdown("**Disturbance regime**")
+
+    disturbance_rate = st.slider(
+        "Disturbance rate",
+        min_value=0.0, max_value=1.0, value=0.01, step=0.05,
+        help="TODO: DESCRIPTION",
+    )
+
+    disturbance_extent = st.slider(
+        "Disturbance extent",
+        min_value=0.0, max_value=1.0, value=0.1, step=0.05,
+        help="TODO: DESCRIPTION",
+    )
+
+    disturbance_severity = st.slider(
+        "Disturbance severity",
+        min_value=0.0, max_value=1.0, value=0.5, step=0.05,
+        help="TODO: DESCRIPTION",
+    )
+
+    st.markdown("---")
 
     if st.button("Run (fresh randomness)", use_container_width=True):
         st.session_state.run_counter += 1
@@ -86,10 +125,9 @@ with ctrl_col:
         st.session_state.timestep = None
         st.rerun()
 
-    st.markdown("---")
     st.caption(
-        "Drag the slider to explore parameter effects with stochasticity held "
-        "fixed. Click **Run** to draw a fresh random "
+        "Drag sliders to explore parameter effects with stochasticity held "
+        "fixed (same random seed). Click **Run** to draw a fresh random "
         "realization with the current parameters."
     )
 
@@ -101,13 +139,19 @@ st.session_state.fresh_run = False
 # detect parameter changes; when the user changes a parameter, we want the
 # scrubber to snap to the final timestep of the new run rather than stay
 # wherever it was in the previous run's history
-current_params = (num_reserves, st.session_state.run_counter)
+current_params = (num_reserves, traveldist, disturbance_rate,
+                  disturbance_extent, disturbance_severity,
+                  st.session_state.run_counter)
 if st.session_state.last_params != current_params:
     st.session_state.timestep = None  # signal to default to final
     st.session_state.last_params = current_params
 
 landscape, pop_history, history = simulate_cached(
     num_reserves=num_reserves,
+    traveldist=traveldist,
+    disturbance_rate=disturbance_rate,
+    disturbance_extent=disturbance_extent,
+    disturbance_severity=disturbance_severity,
     run_counter=st.session_state.run_counter,
     use_seed=use_seed,
 )
