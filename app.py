@@ -96,7 +96,7 @@ with ctrl_col:
 
     r = st.slider(
         "Growth Rate",
-        min_value=0.05, max_value=3.0, value=0.05, step=0.05,
+        min_value=0.05, max_value=3.0, value=0.1, step=0.05,
         help="TODO: DESCRIPTION",
     )
 
@@ -110,7 +110,7 @@ with ctrl_col:
 
     m = st.slider(
         "Percent of individuals migrating per cell per timestep",
-        min_value=0.0, max_value=1.0, value=0.05, step=0.05,
+        min_value=0.0, max_value=0.25, value=0.05, step=0.05,
         help="TODO: DESCRIPTION",
     )
     
@@ -209,6 +209,27 @@ with viz_col:
             colorbar=dict(title="Population"),
         )
     )
+    
+    landscape_float = landscape.astype(float)
+
+    fig.add_trace(go.Contour(
+        z=landscape_float,
+        contours=dict(
+            start=0.5,
+            end=0.5,
+            size=1,
+            showlabels=False,
+            coloring='none' # just want outline around reserve locations
+        ),
+        line=dict(
+            color='black',
+            width=2
+        ),
+        showscale=False,
+        hoverinfo='skip',
+        name="Reserves"
+    ))
+    
     fig.update_layout(
         width=600, height=600,
         margin=dict(l=10, r=10, t=10, b=10),

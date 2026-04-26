@@ -32,7 +32,7 @@ num_reserves (int) : distinct number of reserves
 """
 
 
-def create_landscape(L=50, total_area=100, num_reserves=1):
+def create_landscape(L=50, total_area=200, num_reserves=1):
     # create empty np array for landscape and reserves
     landscape = np.zeros((L, L), dtype=bool)
 
@@ -191,7 +191,7 @@ def run_simulation(landscape, timesteps=100, r=0.5, K=50, m=0.05,
         dispersed = fftconvolve(emigrants, dispersal_kernel, mode='same')
 
         pop += dispersed  # add immigrants to their new home cells
-        pop[~landscape] = 0  # species can only survive in reserve
+        pop[~landscape] = 0  # species can't survive outside habitat
 
         # 3. Disturbance
         # with some chance (per timestep), random fraction of reserve cells are impacted.
