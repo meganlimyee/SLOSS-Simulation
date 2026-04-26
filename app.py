@@ -29,7 +29,7 @@ import numpy as np
 import plotly.graph_objects as go
 import streamlit as st
 
-from sim_streamlit import create_landscape, run_simulation
+from sloss import create_landscape, run_simulation
 
 
 
@@ -130,7 +130,7 @@ with ctrl_col:
 
     disturbance_extent = st.slider(
         "Disturbance extent",
-        min_value=0.0, max_value=1.0, value=0.1, step=0.05,
+        min_value=0.0, max_value=20.0, value=3.0, step=1.0,
         help="TODO: DESCRIPTION",
     )
 

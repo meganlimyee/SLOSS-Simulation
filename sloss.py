@@ -201,17 +201,17 @@ def run_simulation(landscape, timesteps=100, r=0.5, K=50, m=0.05,
         if np.random.rand() < disturbance_rate:
             # check for reserve cells (marked True)
             reserve_coords = np.argwhere(landscape)
-
-            # disturbance applies to a certain percent of the reserve cells
-            numDisturbed = int(disturbance_extent * len(reserve_coords))
-            if numDisturbed > 0:
-                disturbed_idx = np.random.choice(
-                    len(reserve_coords), numDisturbed, replace=False)
-                disturbed = reserve_coords[disturbed_idx]
-
-                #pop[disturbed] *= (1 - disturbance_severity)
-                pop[disturbed[:, 0], disturbed[:, 1]
-                    ] *= (1 - disturbance_severity)
+            
+            #randomly pick a reserve coord to be the center of the disturbance
+            random_index = np.random.randint(len(reserve_coords))
+            disturbCenterY, disturbCenterX = reserve_coords[random_index]
+            
+            y_grid, x_grid = np.ogrid[0:L, 0:L]
+            distances = np.sqrt((y_grid - disturbCenterY)**2 + (x_grid - disturbCenterX)**2)
+            
+            #reduce population if distance from center is less than disturbance_extent
+            disturbed = distances <= disturbance_extent
+            pop[disturbed] *= (1 - disturbance_severity)
 
         # record this timestep's full grid (.copy() so future timesteps don't overwrite it)
         pop_history.append(pop.copy())
@@ -227,3 +227,4 @@ def run_simulation(landscape, timesteps=100, r=0.5, K=50, m=0.05,
         history['num_occupied_reserves'].append(occupiedReserve)
 
     return pop_history, history
+
