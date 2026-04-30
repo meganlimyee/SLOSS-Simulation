@@ -242,3 +242,60 @@ with viz_col:
         f"Total population: **{pop_at_t.sum():.0f}**  •  "
         f"Reserves occupied: **{history['num_occupied_reserves'][timestep]}**"
     )
+    
+    st.subheader("Statistics Over Time")
+   
+    # Total Population
+    fig_pop = go.Figure() 
+    fig_pop.add_trace(go.Scatter(
+        y=history['total_pop'],
+        mode='lines',
+        line=dict(color='blue', width=2),
+        name='Total Population'
+    ))
+    # add line which shows which timestep we are at on the plot
+    fig_pop.add_vline(x=timestep, line_dash="dash", line_color="red", opacity=0.7)
+    fig_pop.update_layout(
+        title="Total Population over Time",
+        xaxis_title="Timestep",
+        yaxis_title="Population",
+        height=250,
+        margin=dict(l=10, r=10, t=40, b=10)
+    )
+    st.plotly_chart(fig_pop, use_container_width=True)
+    
+    # Occupancy
+    fig_occ = go.Figure()
+    fig_occ.add_trace(go.Scatter(
+        y=history['occupancy'],
+        mode='lines',
+        line=dict(color='green', width=2),
+        name='Occupancy'
+    ))
+    fig_occ.add_vline(x=timestep, line_dash="dash", line_color="red", opacity=0.7)
+    fig_occ.update_layout(
+        title="Reserve Cell Occupancy over Time (more than 1 individual)",
+        xaxis_title="Timestep",
+        yaxis_title="Occupancy (%)",
+        height=250,
+        margin=dict(l=10, r=10, t=40, b=10)
+    )
+    st.plotly_chart(fig_occ, use_container_width=True)
+    
+    # Number of Occupied Reserves
+    fig_reserves = go.Figure()
+    fig_reserves.add_trace(go.Scatter(
+        y=history['num_occupied_reserves'],
+        mode='lines',
+        line=dict(color='orange', width=2),
+        name='Occupied Reserves'
+    ))
+    fig_reserves.add_vline(x=timestep, line_dash="dash", line_color="red", opacity=0.7)
+    fig_reserves.update_layout(
+        title="Number of Reserves Occupied over Time (more than 10 individuals)",
+        xaxis_title="Timestep",
+        yaxis_title="Number of Reserves",
+        height=250,
+        margin=dict(l=10, r=10, t=40, b=10)
+    )
+    st.plotly_chart(fig_reserves, use_container_width=True)

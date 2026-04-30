@@ -218,7 +218,7 @@ def run_simulation(landscape, timesteps=100, r=0.5, K=50, m=0.05,
 
         history['total_pop'].append(float(pop.sum()))
         history['occupancy'].append(
-            float((pop[landscape] > 1).sum() / landscape.sum()))
+            float((pop[landscape] > 1).sum() / landscape.sum())*100)
 
         occupiedReserve = 0
         for i in range(1, numReserves + 1):
