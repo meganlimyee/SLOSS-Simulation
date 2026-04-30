@@ -81,16 +81,26 @@ if "run_counter" not in st.session_state:
 
 ############ Layout: vizual on left, controls on right ########################
 
-viz_col, ctrl_col = st.columns([2, 1])
+ctrl_col, ctrl_col2, ctrl_col3 = st.columns(3)
 
 with ctrl_col:
     st.subheader("Controls")
 
     num_reserves = st.slider(
-        "Number of reserves",
+        "Number of reserves (left)",
         min_value=1, max_value=20, value=1, step=1,
         help="TODO: DESCRIPTION",
     )
+    
+    num_reserves2 = st.slider(
+        "Number of reserves (right)",
+        min_value=1, max_value=20, value=10, step=1,
+        help="TODO: DESCRIPTION",
+    )
+    
+
+
+with ctrl_col2:   
     
     st.markdown("**Logistic Growth Parameters**")
 
@@ -120,6 +130,7 @@ with ctrl_col:
         help="TODO: DESCRIPTION",
     )
 
+with ctrl_col3:
     st.markdown("**Disturbance regime**")
 
     disturbance_rate = st.slider(
@@ -180,24 +191,38 @@ landscape, pop_history, history = simulate_cached(
     use_seed=use_seed,
 )
 
+landscape2, pop_history2, history2 = simulate_cached(
+    num_reserves=num_reserves2, r=r, K=K, m=m,
+    traveldist=traveldist,
+    disturbance_rate=disturbance_rate,
+    disturbance_extent=disturbance_extent,
+    disturbance_severity=disturbance_severity,
+    run_counter=st.session_state.run_counter,
+    use_seed=use_seed,
+)
+
+
 T = len(pop_history)
 
 
 ############ Visualization ########################
 
-with viz_col:
-    st.subheader("Population")
 
-    # Timestep scrubber defaults to the final timestep on first run whenever parameters change
-    default_t = T - 1 if st.session_state.timestep is None else st.session_state.timestep
-    timestep = st.slider(
-        "Timestep",
-        min_value=0, max_value=T - 1,
-        value=default_t,
-        key="timestep_slider",
-        help="Drag to replay the simulation. Defaults to the final timestep.",
-    )
-    st.session_state.timestep = timestep
+# Timestep scrubber defaults to the final timestep on first run whenever parameters change
+default_t = T - 1 if st.session_state.timestep is None else st.session_state.timestep
+timestep = st.slider(
+    "Timestep",
+    min_value=0, max_value=T - 1,
+    value=default_t,
+    key="timestep_slider",
+    help="Drag to replay the simulation. Defaults to the final timestep.",
+)
+st.session_state.timestep = timestep
+st.subheader("Population")
+
+viz_col, viz_col2 = st.columns(2)
+
+with viz_col:
 
     pop_at_t = pop_history[timestep]
 
@@ -235,7 +260,7 @@ with viz_col:
         margin=dict(l=10, r=10, t=10, b=10),
         yaxis=dict(scaleanchor="x", autorange="reversed"),  # match imshow
     )
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True, key='colormap')
 
     st.caption(
         f"Timestep **{timestep}** of {T - 1}  •  "
@@ -262,7 +287,7 @@ with viz_col:
         height=250,
         margin=dict(l=10, r=10, t=40, b=10)
     )
-    st.plotly_chart(fig_pop, use_container_width=True)
+    st.plotly_chart(fig_pop, use_container_width=True, key='pop')
     
     # Occupancy
     fig_occ = go.Figure()
@@ -280,7 +305,7 @@ with viz_col:
         height=250,
         margin=dict(l=10, r=10, t=40, b=10)
     )
-    st.plotly_chart(fig_occ, use_container_width=True)
+    st.plotly_chart(fig_occ, use_container_width=True, key='occ')
     
     # Number of Occupied Reserves
     fig_reserves = go.Figure()
@@ -298,4 +323,109 @@ with viz_col:
         height=250,
         margin=dict(l=10, r=10, t=40, b=10)
     )
-    st.plotly_chart(fig_reserves, use_container_width=True)
+    st.plotly_chart(fig_reserves, use_container_width=True, key='reserves')
+    
+with viz_col2:
+
+    st.session_state.timestep = timestep
+
+    pop_at_t2 = pop_history2[timestep]
+
+    fig2 = go.Figure(
+        data=go.Heatmap(
+            z=pop_at_t2,
+            zmin=0, zmax=K,
+            colorscale="Viridis",
+            colorbar=dict(title="Population"),
+        )
+    )
+    
+    landscape_float2 = landscape2.astype(float)
+
+    fig2.add_trace(go.Contour(
+        z=landscape_float2,
+        contours=dict(
+            start=0.5,
+            end=0.5,
+            size=1,
+            showlabels=False,
+            coloring='none' # just want outline around reserve locations
+        ),
+        line=dict(
+            color='black',
+            width=2
+        ),
+        showscale=False,
+        hoverinfo='skip',
+        name="Reserves"
+    ))
+    
+    fig2.update_layout(
+        width=600, height=600,
+        margin=dict(l=10, r=10, t=10, b=10),
+        yaxis=dict(scaleanchor="x", autorange="reversed"),  # match imshow
+    )
+    st.plotly_chart(fig2, use_container_width=True, key='colormap2')
+
+    st.caption(
+        f"Timestep **{timestep}** of {T - 1}  •  "
+        f"Total population: **{pop_at_t.sum():.0f}**  •  "
+        f"Reserves occupied: **{history['num_occupied_reserves'][timestep]}**"
+    )
+    
+    st.subheader("Statistics Over Time")
+   
+    # Total Population
+    fig_pop2 = go.Figure() 
+    fig_pop2.add_trace(go.Scatter(
+        y=history2['total_pop'],
+        mode='lines',
+        line=dict(color='blue', width=2),
+        name='Total Population'
+    ))
+    # add line which shows which timestep we are at on the plot
+    fig_pop2.add_vline(x=timestep, line_dash="dash", line_color="red", opacity=0.7)
+    fig_pop2.update_layout(
+        title="Total Population over Time",
+        xaxis_title="Timestep",
+        yaxis_title="Population",
+        height=250,
+        margin=dict(l=10, r=10, t=40, b=10)
+    )
+    st.plotly_chart(fig_pop2, use_container_width=True, key='pop2')
+    
+    # Occupancy
+    fig_occ2 = go.Figure()
+    fig_occ2.add_trace(go.Scatter(
+        y=history2['occupancy'],
+        mode='lines',
+        line=dict(color='green', width=2),
+        name='Occupancy'
+    ))
+    fig_occ2.add_vline(x=timestep, line_dash="dash", line_color="red", opacity=0.7)
+    fig_occ2.update_layout(
+        title="Reserve Cell Occupancy over Time (more than 1 individual)",
+        xaxis_title="Timestep",
+        yaxis_title="Occupancy (%)",
+        height=250,
+        margin=dict(l=10, r=10, t=40, b=10)
+    )
+    st.plotly_chart(fig_occ2, use_container_width=True, key='occ2')
+    
+    # Number of Occupied Reserves
+    fig_reserves2 = go.Figure()
+    fig_reserves2.add_trace(go.Scatter(
+        y=history2['num_occupied_reserves'],
+        mode='lines',
+        line=dict(color='orange', width=2),
+        name='Occupied Reserves'
+    ))
+    fig_reserves2.add_vline(x=timestep, line_dash="dash", line_color="red", opacity=0.7)
+    fig_reserves2.update_layout(
+        title="Number of Reserves Occupied over Time (more than 10 individuals)",
+        xaxis_title="Timestep",
+        yaxis_title="Number of Reserves",
+        height=250,
+        margin=dict(l=10, r=10, t=40, b=10)
+    )
+    st.plotly_chart(fig_reserves2, use_container_width=True, key='reserves2')
