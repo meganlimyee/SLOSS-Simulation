@@ -413,8 +413,8 @@ with viz_col2:
 
     st.caption(
         f"Timestep **{timestep}** of {T - 1}  •  "
-        f"Total population: **{pop_at_t.sum():.0f}**  •  "
-        f"Reserves occupied: **{history['num_occupied_reserves'][timestep]}**"
+        f"Total population: **{pop_at_t2.sum():.0f}**  •  "
+        f"Reserves occupied: **{history2['num_occupied_reserves'][timestep]}**"
     )
     
     st.subheader("Statistics Over Time")
