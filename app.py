@@ -92,6 +92,11 @@ presets = {
     "L": 50, "num_reserves": 1, "num_reserves2": 16,
     "r": 2.0, "K": 50, "m": 0.05, "traveldist": 5.0, "disturbance_rate": 0.3,
     "disturbance_severity": 1.0, "disturbance_extent": 11.0
+},
+"edge_effect": {
+    "L": 50, "num_reserves": 1, "num_reserves2": 16,
+    "r": 0.2, "K": 50, "m": 0.2, "traveldist": 10.0, "disturbance_rate": 0.01,
+    "disturbance_severity": 0.5, "disturbance_extent": 5.0,
 }
 }
 
@@ -111,11 +116,15 @@ with ctrl_col:
         min_value=1, max_value=20, value=10, step=1,
         help="TODO: DESCRIPTION",
     )
-    st.subheader("Preset Scenarios")
+    st.markdown("**Preset Scenarios**")
     if st.button("Default", use_container_width=True):
         st.session_state.preset = "default"
-    if st.button("Rescue Effect", use_container_width=True):
+    st.text("High disturbance, high growth rate:")
+    if st.button("Rescue Effect (favors SS)", use_container_width=True):
         st.session_state.preset = "rescue_effect"
+    st.text("High migration, low growth rate:")
+    if st.button("Negative Edge Effect (favors SL)", use_container_width=True):
+        st.session_state.preset = "edge_effect"
         
 
 with ctrl_col2:   
@@ -143,7 +152,7 @@ with ctrl_col2:
 
     m = st.slider(
         "Percent of individuals migrating per cell per timestep",
-        min_value=0.0, max_value=0.25, value=current_preset['m'], step=0.05,
+        min_value=0.0, max_value=0.25, value=current_preset['m'], step=0.01,
         help="TODO: DESCRIPTION",
     )
     
