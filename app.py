@@ -81,6 +81,20 @@ if "run_counter" not in st.session_state:
 
 ############ Layout: vizual on left, controls on right ########################
 
+#preset scenarios that show specific effects we want to showcase
+presets = {
+"default": {
+    "L": 50, "num_reserves": 1, "num_reserves2": 16,
+    "r": 0.5, "K": 50, "m": 0.05, "traveldist": 5.0, "disturbance_rate": 0.01,
+    "disturbance_severity": 0.5, "disturbance_extent": 5.0,
+},
+"rescue_effect": {
+    "L": 50, "num_reserves": 1, "num_reserves2": 16,
+    "r": 2.0, "K": 50, "m": 0.05, "traveldist": 5.0, "disturbance_rate": 0.3,
+    "disturbance_severity": 1.0, "disturbance_extent": 11.0
+}
+}
+
 ctrl_col, ctrl_col2, ctrl_col3 = st.columns(3)
 
 with ctrl_col:
@@ -97,22 +111,31 @@ with ctrl_col:
         min_value=1, max_value=20, value=10, step=1,
         help="TODO: DESCRIPTION",
     )
-    
-
+    st.subheader("Preset Scenarios")
+    if st.button("Default", use_container_width=True):
+        st.session_state.preset = "default"
+    if st.button("Rescue Effect", use_container_width=True):
+        st.session_state.preset = "rescue_effect"
+        
 
 with ctrl_col2:   
+    
+    if 'preset' not in st.session_state:
+        st.session_state.preset = "default"
+    
+    current_preset = presets[st.session_state.preset]
     
     st.markdown("**Logistic Growth Parameters**")
 
     r = st.slider(
         "Growth Rate",
-        min_value=0.05, max_value=3.0, value=0.1, step=0.05,
+        min_value=0.05, max_value=3.0, value=current_preset["r"], step=0.05,
         help="TODO: DESCRIPTION",
     )
 
     K = st.slider(
         "Carrying Capacity per Cell",
-        min_value=5, max_value=100, value=10, step=1,
+        min_value=5, max_value=100, value=current_preset["K"], step=1,
         help="TODO: DESCRIPTION",
     )
     
@@ -120,13 +143,13 @@ with ctrl_col2:
 
     m = st.slider(
         "Percent of individuals migrating per cell per timestep",
-        min_value=0.0, max_value=0.25, value=0.05, step=0.05,
+        min_value=0.0, max_value=0.25, value=current_preset['m'], step=0.05,
         help="TODO: DESCRIPTION",
     )
     
     traveldist = st.slider(
         "Dispersal distance σ",
-        min_value=1.0, max_value=20.0, value=10.0, step=0.5,
+        min_value=1.0, max_value=20.0, value=current_preset['traveldist'], step=0.5,
         help="TODO: DESCRIPTION",
     )
 
@@ -135,19 +158,19 @@ with ctrl_col3:
 
     disturbance_rate = st.slider(
         "Disturbance rate",
-        min_value=0.0, max_value=1.0, value=0.01, step=0.05,
+        min_value=0.0, max_value=1.0, value=current_preset['disturbance_rate'], step=0.05,
         help="TODO: DESCRIPTION",
     )
 
     disturbance_extent = st.slider(
         "Disturbance extent",
-        min_value=0.0, max_value=20.0, value=3.0, step=1.0,
+        min_value=0.0, max_value=20.0, value=current_preset['disturbance_extent'], step=1.0,
         help="TODO: DESCRIPTION",
     )
 
     disturbance_severity = st.slider(
         "Disturbance severity",
-        min_value=0.0, max_value=1.0, value=0.5, step=0.05,
+        min_value=0.0, max_value=1.0, value=current_preset['disturbance_severity'], step=0.05,
         help="TODO: DESCRIPTION",
     )
 
@@ -165,6 +188,9 @@ with ctrl_col3:
         "fixed (same random seed). Click **Run** to draw a fresh random "
         "realization with the current parameters."
     )
+
+
+
 
 # Decide which mode we're in for this render
 use_seed = not st.session_state.fresh_run
