@@ -69,7 +69,7 @@ def simulate_cached(num_reserves: int, r: float, K: float,
 
 st.set_page_config(page_title="SLOSS Simulator", layout="wide")
 st.title("SLOSS Simulator")
-st.caption("Single Large Or Several Small reserves — explore the tradeoff.")
+st.caption("Explore the tradeoff between single large or several small reserves.")
 
 # Initialize session state
 if "run_counter" not in st.session_state:
@@ -100,11 +100,10 @@ presets = {
 }
 }
 
+st.subheader("Controls")
 ctrl_col, ctrl_col2, ctrl_col3 = st.columns(3)
 
 with ctrl_col:
-    st.subheader("Controls")
-
     num_reserves = st.slider(
         "Number of reserves (left)",
         min_value=1, max_value=20, value=1, step=1,
@@ -120,24 +119,23 @@ with ctrl_col:
     #create a version counter which will reset sliders every time a preset is used
     if 'preset_version' not in st.session_state:
         st.session_state.preset_version = 0
-    if st.button("Default", use_container_width=True):
+    if st.button("Default", width='stretch'):
         st.session_state.preset = "default"
         st.session_state.preset_version += 1
         st.rerun()
     st.text("High disturbance, high growth rate:")
-    if st.button("Rescue Effect (favors SS)", use_container_width=True):
+    if st.button("Rescue Effect (favors SS)", width='stretch'):
         st.session_state.preset = "rescue_effect"
         st.session_state.preset_version += 1
         st.rerun()
     st.text("High migration, low growth rate:")
-    if st.button("Negative Edge Effect (favors SL)", use_container_width=True):
+    if st.button("Negative Edge Effect (favors SL)", width='stretch'):
         st.session_state.preset = "edge_effect"
         st.session_state.preset_version += 1
         st.rerun()
         
 
 with ctrl_col2:   
-    
     if 'preset' not in st.session_state:
         st.session_state.preset = "default"
     
@@ -154,7 +152,7 @@ with ctrl_col2:
     )
 
     K = st.slider(
-        "Carrying Capacity per Cell",
+        "Carrying capacity per cell",
         min_value=5, max_value=100, value=current_preset["K"], step=1,
         help="TODO: DESCRIPTION", key=f"slider_K{v}"
     )
@@ -174,7 +172,7 @@ with ctrl_col2:
     )
 
 with ctrl_col3:
-    st.markdown("**Disturbance regime**")
+    st.markdown("**Disturbance Parameters**")
 
     disturbance_rate = st.slider(
         "Disturbance rate",
@@ -196,7 +194,7 @@ with ctrl_col3:
 
     st.markdown("---")
 
-    if st.button("Run (fresh randomness)", use_container_width=True):
+    if st.button("Run (fresh randomness)", width='stretch'):
         st.session_state.run_counter += 1
         st.session_state.fresh_run = True
         # Force the timestep slider to snap to the final frame on a fresh run
@@ -306,7 +304,7 @@ with viz_col:
         margin=dict(l=10, r=10, t=10, b=10),
         yaxis=dict(scaleanchor="x", autorange="reversed"),  # match imshow
     )
-    st.plotly_chart(fig, use_container_width=True, key='colormap')
+    st.plotly_chart(fig, width='stretch', key='colormap')
 
     st.caption(
         f"Timestep **{timestep}** of {T - 1}  •  "
@@ -333,7 +331,7 @@ with viz_col:
         height=250,
         margin=dict(l=10, r=10, t=40, b=10)
     )
-    st.plotly_chart(fig_pop, use_container_width=True, key='pop')
+    st.plotly_chart(fig_pop, width='stretch', key='pop')
     
     # Occupancy
     fig_occ = go.Figure()
@@ -351,7 +349,7 @@ with viz_col:
         height=250,
         margin=dict(l=10, r=10, t=40, b=10)
     )
-    st.plotly_chart(fig_occ, use_container_width=True, key='occ')
+    st.plotly_chart(fig_occ, width='stretch', key='occ')
     
     # Number of Occupied Reserves
     fig_reserves = go.Figure()
@@ -369,7 +367,7 @@ with viz_col:
         height=250,
         margin=dict(l=10, r=10, t=40, b=10)
     )
-    st.plotly_chart(fig_reserves, use_container_width=True, key='reserves')
+    st.plotly_chart(fig_reserves, width='stretch', key='reserves')
     
 with viz_col2:
 
@@ -411,7 +409,7 @@ with viz_col2:
         margin=dict(l=10, r=10, t=10, b=10),
         yaxis=dict(scaleanchor="x", autorange="reversed"),  # match imshow
     )
-    st.plotly_chart(fig2, use_container_width=True, key='colormap2')
+    st.plotly_chart(fig2, width='stretch', key='colormap2')
 
     st.caption(
         f"Timestep **{timestep}** of {T - 1}  •  "
@@ -438,7 +436,7 @@ with viz_col2:
         height=250,
         margin=dict(l=10, r=10, t=40, b=10)
     )
-    st.plotly_chart(fig_pop2, use_container_width=True, key='pop2')
+    st.plotly_chart(fig_pop2, width='stretch', key='pop2')
     
     # Occupancy
     fig_occ2 = go.Figure()
@@ -456,7 +454,7 @@ with viz_col2:
         height=250,
         margin=dict(l=10, r=10, t=40, b=10)
     )
-    st.plotly_chart(fig_occ2, use_container_width=True, key='occ2')
+    st.plotly_chart(fig_occ2, width='stretch', key='occ2')
     
     # Number of Occupied Reserves
     fig_reserves2 = go.Figure()
@@ -474,4 +472,4 @@ with viz_col2:
         height=250,
         margin=dict(l=10, r=10, t=40, b=10)
     )
-    st.plotly_chart(fig_reserves2, use_container_width=True, key='reserves2')
+    st.plotly_chart(fig_reserves2, width='stretch', key='reserves2')
