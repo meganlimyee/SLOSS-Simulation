@@ -104,97 +104,96 @@ st.subheader("Controls")
 ctrl_col, ctrl_col2, ctrl_col3 = st.columns(3)
 
 with ctrl_col:
-    num_reserves = st.slider(
-        "Number of reserves (left)",
-        min_value=1, max_value=20, value=1, step=1,
-        help="Determine how the total habitat is divided (total area is held constant).",
-    )
-    
-    num_reserves2 = st.slider(
-        "Number of reserves (right)",
-        min_value=1, max_value=20, value=10, step=1,
-        help="Determine how the total habitat is divided (total area is held constant).", 
-    )
-    st.markdown("**Preset Scenarios**")
-    #create a version counter which will reset sliders every time a preset is used
-    if 'preset_version' not in st.session_state:
-        st.session_state.preset_version = 0
-    if st.button("Default", width='stretch'):
-        st.session_state.preset = "default"
-        st.session_state.preset_version += 1
-        st.rerun()
-    st.text("High disturbance, high growth rate:")
-    if st.button("Rescue Effect (favors SS)", width='stretch'):
-        st.session_state.preset = "rescue_effect"
-        st.session_state.preset_version += 1
-        st.rerun()
-    st.text("High migration, low growth rate:")
-    if st.button("Negative Edge Effect (favors SL)", width='stretch'):
-        st.session_state.preset = "edge_effect"
-        st.session_state.preset_version += 1
-        st.rerun()
+    with st.expander("**Reserve Configuration**", expanded=True):
+        num_reserves = st.slider(
+            "Number of reserves (left)",
+            min_value=1, max_value=20, value=1, step=1,
+            help="Determine how the total habitat is divided (total area is held constant).",
+        )
+
+        num_reserves2 = st.slider(
+            "Number of reserves (right)",
+            min_value=1, max_value=20, value=10, step=1,
+            help="Determine how the total habitat is divided (total area is held constant).",
+        )
+
+    with st.expander("**Preset Scenarios**", expanded=True):
+        #create a version counter which will reset sliders every time a preset is used
+        if 'preset_version' not in st.session_state:
+            st.session_state.preset_version = 0
+        if st.button("Default", width='stretch'):
+            st.session_state.preset = "default"
+            st.session_state.preset_version += 1
+            st.rerun()
+        st.text("High disturbance, high growth rate:")
+        if st.button("Rescue Effect (Favors SS)", width='stretch'):
+            st.session_state.preset = "rescue_effect"
+            st.session_state.preset_version += 1
+            st.rerun()
+        st.text("High migration, low growth rate:")
+        if st.button("Negative Edge Effect (Favors SL)", width='stretch'):
+            st.session_state.preset = "edge_effect"
+            st.session_state.preset_version += 1
+            st.rerun()
         
 
-with ctrl_col2:   
+with ctrl_col2:
     if 'preset' not in st.session_state:
         st.session_state.preset = "default"
-    
+
     current_preset = presets[st.session_state.preset]
     #updates keys when presets pressed, resetting slider
-    v = st.session_state.preset_version 
-    
-    st.markdown("**Logistic Growth Parameters**")
+    v = st.session_state.preset_version
 
-    r = st.slider(
-        "Growth Rate (r)",
-        min_value=0.05, max_value=3.0, value=current_preset["r"], step=0.05,
-        help="Intrinsic per-capita growth rate (r) in the logistic equation. Higher r leads to faster revival, favoring SS.", key=f"slider_r{v}"
-    )
+    with st.expander("**Logistic Growth Parameters**", expanded=True):
+        r = st.slider(
+            "Growth Rate (r)",
+            min_value=0.05, max_value=3.0, value=current_preset["r"], step=0.05,
+            help="Intrinsic per-capita growth rate (r) in the logistic equation. Higher r leads to faster revival, favoring SS.", key=f"slider_r{v}"
+        )
 
-    K = st.slider(
-        "Carrying capacity per cell (K)",
-        min_value=5, max_value=100, value=current_preset["K"], step=1,
-        help="Maximum population a single reserve cell can sustain (K).", key=f"slider_K{v}"
-    )
-    
-    st.markdown("**Migration Parameters**")
+        K = st.slider(
+            "Carrying capacity per cell (K)",
+            min_value=5, max_value=100, value=current_preset["K"], step=1,
+            help="Maximum population a single reserve cell can sustain (K).", key=f"slider_K{v}"
+        )
 
-    m = st.slider(
-        "Percent of individuals migrating per cell per timestep",
-        min_value=0.0, max_value=0.25, value=current_preset['m'], step=0.01,
-        help="Higher migration moves more individuals out of source cells. Whether that helps or hurts depends on dispersal distance and reserve geometry.", key=f"slider_m{v}"
-    )
-    
-    traveldist = st.slider(
-        "Dispersal distance (σ)",
-        min_value=1.0, max_value=20.0, value=current_preset['traveldist'], step=0.5,
-        help="Standard deviation σ of the Gaussian dispersal kernel, in cells.", key=f"slider_traveldist{v}"
-    )
+    with st.expander("**Migration Parameters**", expanded=True):
+        m = st.slider(
+            "Percent of individuals migrating per cell per timestep",
+            min_value=0.0, max_value=0.25, value=current_preset['m'], step=0.01,
+            help="Higher migration moves more individuals out of source cells. Whether that helps or hurts depends on dispersal distance and reserve geometry.", key=f"slider_m{v}"
+        )
+
+        traveldist = st.slider(
+            "Dispersal distance (σ)",
+            min_value=1.0, max_value=20.0, value=current_preset['traveldist'], step=0.5,
+            help="Standard deviation σ of the Gaussian dispersal kernel, in cells.", key=f"slider_traveldist{v}"
+        )
 
 with ctrl_col3:
-    st.markdown("**Disturbance Parameters**")
+    with st.expander("**Disturbance Parameters**", expanded=True):
+        disturbance_rate = st.slider(
+            "Disturbance rate",
+            min_value=0.0, max_value=1.0, value=current_preset['disturbance_rate'], step=0.05,
+            help="Probability that a disturbance event occurs per timestep.", key=f"slider_distrate{v}"
+        )
 
-    disturbance_rate = st.slider(
-        "Disturbance rate",
-        min_value=0.0, max_value=1.0, value=current_preset['disturbance_rate'], step=0.05,
-        help="Probability that a disturbance event occurs per timestep.", key=f"slider_distrate{v}"
-    )
+        disturbance_extent = st.slider(
+            "Disturbance extent",
+            min_value=0.0, max_value=20.0, value=current_preset['disturbance_extent'], step=1.0,
+            help="Radius of the disturbance in cells. A disturbance hits a circular area centered on a random reserve cell.", key=f"slider_distextent{v}"
+        )
 
-    disturbance_extent = st.slider(
-        "Disturbance extent",
-        min_value=0.0, max_value=20.0, value=current_preset['disturbance_extent'], step=1.0,
-        help="Radius of the disturbance in cells. A disturbance hits a circular area centered on a random reserve cell.", key=f"slider_distextent{v}"
-    )
-
-    disturbance_severity = st.slider(
-        "Disturbance severity",
-        min_value=0.0, max_value=1.0, value=current_preset['disturbance_severity'], step=0.05,
-        help="Fraction of the population removed in disturbed cells.", key=f"slider_distseverity{v}"
-    )
+        disturbance_severity = st.slider(
+            "Disturbance severity",
+            min_value=0.0, max_value=1.0, value=current_preset['disturbance_severity'], step=0.05,
+            help="Fraction of the population removed in disturbed cells.", key=f"slider_distseverity{v}"
+        )
 
     st.markdown("---")
 
-    if st.button("Run (fresh randomness)", width='stretch'):
+    if st.button("Run (Fresh Randomness)", width='stretch'):
         st.session_state.run_counter += 1
         st.session_state.fresh_run = True
         # Force the timestep slider to snap to the final frame on a fresh run
@@ -202,7 +201,7 @@ with ctrl_col3:
         st.rerun()
 
     st.caption(
-        "Drag sliders to explore parameter effects with stochasticity held "
+        "**Hint:** Drag sliders to explore parameter effects with stochasticity held "
         "fixed (same random seed). Click **Run** to draw a fresh random "
         "realization with the current parameters."
     )
