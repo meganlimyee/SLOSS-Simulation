@@ -250,6 +250,31 @@ T = len(pop_history)
 
 ############ Visualization ########################
 
+# how many frames a disturbance border lingers on the landscape after the disturbance
+disturb_persistence = 5
+
+
+def overlay_disturbances(fig, disturbance_events, ts_current):
+    """
+    Draw a red circle on figures for each disturbance that fired, sustained by
+    the number of timeframe set above via disturb_persistence.
+
+    disturbance_events: list of tuples from history['disturbance_events']
+                    (t, center_y, center_x, radius)
+    ts_current: the timestep currently shown on scrubber
+    """
+    for (event_t, cy, cx, radius) in disturbance_events:
+        sustain = ts_current - event_t
+        if 0 <= sustain < disturb_persistence:
+            fig.add_shape(
+                type="circle",
+                xref="x", yref="y",
+                x0=cx - radius, y0=cy - radius,
+                x1=cx + radius, y1=cy + radius,
+                line=dict(color="red", width=2),
+                fillcolor="rgba(0,0,0,0)", 
+            )
+
 
 # Timestep scrubber defaults to the final timestep on first run whenever parameters change
 default_t = T - 1 if st.session_state.timestep is None else st.session_state.timestep
@@ -297,11 +322,16 @@ with viz_col:
         hoverinfo='skip',
         name="Reserves"
     ))
-    
+
+    overlay_disturbances(fig, history['disturbance_events'], timestep)
+
+
+    bound = pop_at_t.shape[0]
     fig.update_layout(
         width=600, height=600,
         margin=dict(l=10, r=10, t=10, b=10),
-        yaxis=dict(scaleanchor="x", autorange="reversed"),  # match imshow
+        xaxis=dict(range=[-0.5, bound - 0.5], constrain="domain"),
+        yaxis=dict(scaleanchor="x", range=[bound - 0.5, -0.5], constrain="domain"),  # reversed for imshow
     )
     st.plotly_chart(fig, width='stretch', key='colormap')
 
@@ -402,11 +432,15 @@ with viz_col2:
         hoverinfo='skip',
         name="Reserves"
     ))
-    
+
+    overlay_disturbances(fig2, history2['disturbance_events'], timestep)
+
+    L = pop_at_t2.shape[0]
     fig2.update_layout(
         width=600, height=600,
         margin=dict(l=10, r=10, t=10, b=10),
-        yaxis=dict(scaleanchor="x", autorange="reversed"),  # match imshow
+        xaxis=dict(range=[-0.5, L - 0.5], constrain="domain"),
+        yaxis=dict(scaleanchor="x", range=[L - 0.5, -0.5], constrain="domain"),
     )
     st.plotly_chart(fig2, width='stretch', key='colormap2')
 

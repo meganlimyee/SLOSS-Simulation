@@ -151,7 +151,8 @@ def run_simulation(landscape, timesteps=100, r=0.5, K=50, m=0.05,
     history = {
         'total_pop': [],  # total population
         'occupancy': [],  # fraction of reserve cells with pop > 1
-        'num_occupied_reserves': []
+        'num_occupied_reserves': [],
+        'disturbance_events': [] # disturbance event tuples with timestep, radius, center data
     }
 
     # per-timestep snapshots of the full population grid, for GUI scrubbing
@@ -212,6 +213,11 @@ def run_simulation(landscape, timesteps=100, r=0.5, K=50, m=0.05,
             #reduce population if distance from center is less than disturbance_extent
             disturbed = distances <= disturbance_extent
             pop[disturbed] *= (1 - disturbance_severity)
+
+            #record event so the GUI can draw a red circle on the landscape
+            history['disturbance_events'].append(
+                (t, int(disturbCenterY), int(disturbCenterX), float(disturbance_extent))
+            )
 
         # record this timestep's full grid (.copy() so future timesteps don't overwrite it)
         pop_history.append(pop.copy())
