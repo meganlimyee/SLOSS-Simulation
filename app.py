@@ -131,7 +131,7 @@ with ctrl_col:
             st.session_state.preset_version += 1
             st.rerun()
         st.text("High migration, low growth rate:")
-        if st.button("Negative Edge Effect (Favors SL)", width='stretch'):
+        if st.button("High Roaming (Favors SL)", width='stretch'):
             st.session_state.preset = "edge_effect"
             st.session_state.preset_version += 1
             st.rerun()
