@@ -149,7 +149,7 @@ with ctrl_col2:
         r = st.slider(
             "Growth Rate (r)",
             min_value=0.05, max_value=3.0, value=current_preset["r"], step=0.05,
-            help="Intrinsic per-capita growth rate (r) in the logistic equation. Higher r leads to faster revival, favoring SS.", key=f"slider_r{v}"
+            help="Intrinsic per-capita growth rate (r) in the logistic equation.", key=f"slider_r{v}"
         )
 
         K = st.slider(
@@ -180,7 +180,7 @@ with ctrl_col3:
         )
 
         disturbance_extent = st.slider(
-            "Disturbance extent",
+            "Disturbance radius",
             min_value=0.0, max_value=20.0, value=current_preset['disturbance_extent'], step=1.0,
             help="Radius of the disturbance in cells. A disturbance hits a circular area centered on a random reserve cell.", key=f"slider_distextent{v}"
         )
