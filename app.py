@@ -29,7 +29,7 @@ import numpy as np
 import plotly.graph_objects as go
 import streamlit as st
 
-from sloss import create_landscape, run_simulation
+from sloss_1 import create_landscape, run_simulation
 
 
 
@@ -45,7 +45,7 @@ from sloss import create_landscape, run_simulation
 def simulate_cached(num_reserves: int, r: float, K: float,
                     m: float, traveldist: float,
                     disturbance_rate: float, disturbance_extent: float,
-                    disturbance_severity: float,
+                    disturbance_severity: float, edge_effect: float,
                     run_counter: int, use_seed: bool):
     #Run a full simulation cached on its arguments
     seed = 42 if use_seed else None
@@ -60,6 +60,7 @@ def simulate_cached(num_reserves: int, r: float, K: float,
         disturbance_rate=disturbance_rate,
         disturbance_extent=disturbance_extent,
         disturbance_severity=disturbance_severity,
+        edge_effect=edge_effect,
         seed=seed,
     )
     return landscape, pop_history, history
@@ -86,17 +87,17 @@ presets = {
 "default": {
     "L": 50, "num_reserves": 1, "num_reserves2": 16,
     "r": 0.5, "K": 50, "m": 0.05, "traveldist": 5.0, "disturbance_rate": 0.01,
-    "disturbance_severity": 0.5, "disturbance_extent": 5.0,
+    "disturbance_severity": 0.5, "disturbance_extent": 5.0, "edge_effect": 1.0,
 },
 "rescue_effect": {
     "L": 50, "num_reserves": 1, "num_reserves2": 16,
     "r": 2.0, "K": 50, "m": 0.05, "traveldist": 5.0, "disturbance_rate": 0.3,
-    "disturbance_severity": 1.0, "disturbance_extent": 11.0
+    "disturbance_severity": 1.0, "disturbance_extent": 11.0, "edge_effect": 1.0,
 },
 "edge_effect": {
     "L": 50, "num_reserves": 1, "num_reserves2": 16,
     "r": 0.2, "K": 50, "m": 0.25, "traveldist": 5.0, "disturbance_rate": 0.01,
-    "disturbance_severity": 0.5, "disturbance_extent": 5.0,
+    "disturbance_severity": 0.5, "disturbance_extent": 5.0, "edge_effect": 0.3,
 }
 }
 
@@ -156,6 +157,13 @@ with ctrl_col2:
             "Carrying capacity per cell (K)",
             min_value=5, max_value=100, value=current_preset["K"], step=1,
             help="Maximum population a single reserve cell can sustain (K).", key=f"slider_K{v}"
+        )
+
+        edge_effect = st.slider(
+            "Edge effect",
+            min_value=0.1, max_value=3.0, value=current_preset["edge_effect"], step=0.1,
+            help="Multiplier on carrying capacity for cells on the edge of a reserve. 1.0 is neutral; <1 means edges support smaller populations than the interior (interior-loving species like deep-forest birds); >1 means edges support larger populations (edge-adapted species like deer or many songbirds). Several Small reserves are mostly edge cells, so this slider strongly affects them.",
+            key=f"slider_edge_effect{v}"
         )
 
     with st.expander("**Migration Parameters**", expanded=True):
@@ -218,7 +226,7 @@ st.session_state.fresh_run = False
 # scrubber to snap to the final timestep of the new run rather than stay
 # wherever it was in the previous run's history
 current_params = (num_reserves, r, K, m, traveldist, disturbance_rate,
-                  disturbance_extent, disturbance_severity,
+                  disturbance_extent, disturbance_severity, edge_effect,
                   st.session_state.run_counter)
 if st.session_state.last_params != current_params:
     st.session_state.timestep = None  # signal to default to final
@@ -230,6 +238,7 @@ landscape, pop_history, history = simulate_cached(
     disturbance_rate=disturbance_rate,
     disturbance_extent=disturbance_extent,
     disturbance_severity=disturbance_severity,
+    edge_effect=edge_effect,
     run_counter=st.session_state.run_counter,
     use_seed=use_seed,
 )
@@ -240,6 +249,7 @@ landscape2, pop_history2, history2 = simulate_cached(
     disturbance_rate=disturbance_rate,
     disturbance_extent=disturbance_extent,
     disturbance_severity=disturbance_severity,
+    edge_effect=edge_effect,
     run_counter=st.session_state.run_counter,
     use_seed=use_seed,
 )
@@ -297,7 +307,7 @@ with viz_col:
     fig = go.Figure(
         data=go.Heatmap(
             z=pop_at_t,
-            zmin=0, zmax=K,
+            zmin=0, zmax=max(K, K * edge_effect),
             colorscale="Viridis",
             colorbar=dict(title="Population"),
         )
@@ -407,7 +417,7 @@ with viz_col2:
     fig2 = go.Figure(
         data=go.Heatmap(
             z=pop_at_t2,
-            zmin=0, zmax=K,
+            zmin=0, zmax=max(K, K * edge_effect),
             colorscale="Viridis",
             colorbar=dict(title="Population"),
         )

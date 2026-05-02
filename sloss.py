@@ -134,7 +134,8 @@ history (dict): aggregate per-timestep stats (total_pop, occupancy,
 
 def run_simulation(landscape, timesteps=100, r=0.5, K=50, m=0.05,
                    disturbance_rate=0.01, disturbance_severity=0.5,
-                   disturbance_extent=0.1, traveldist=10, seed=None):
+                   disturbance_extent=0.1, traveldist=10,
+                   edge_effect=1.0, seed=None):
 
     # seed the RNG for reproducible runs (used by the GUI's slider-drag mode)
     if seed is not None:
@@ -147,6 +148,14 @@ def run_simulation(landscape, timesteps=100, r=0.5, K=50, m=0.05,
     # find reserves using ndimage
     # ndimage identifies connected reserve patches to track how many separate reserves are occupied (>10)
     reserveArrays, numReserves = ndimage.label(landscape)
+
+    # edge-effect multiplier applied to the first-layer edge cells
+    non_reserve = ~landscape
+    expanded_non_reserve = ndimage.binary_dilation(non_reserve)
+    edge_cells = landscape & expanded_non_reserve
+
+    K_grid = np.full((L, L), K, dtype=float)
+    K_grid[edge_cells] *= edge_effect
 
     history = {
         'total_pop': [],  # total population
@@ -177,8 +186,9 @@ def run_simulation(landscape, timesteps=100, r=0.5, K=50, m=0.05,
 
         # 1. Logistic growth of  ulation in each cell (standard-density growth equation)
         # population grows towareeds carrying capacity
+        # r is uniform across cells. K varies per cell via K_grid so that edge cells equilibrate at edge_effect * K
         pop[landscape] = pop[landscape] + r * \
-            pop[landscape] * (1 - pop[landscape] / K)
+            pop[landscape] * (1 - pop[landscape] / K_grid[landscape])
         pop = np.clip(pop, 0, None)  # disallow negative populations
 
         # 2. Dispersal
