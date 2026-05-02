@@ -29,7 +29,7 @@ import numpy as np
 import plotly.graph_objects as go
 import streamlit as st
 
-from sloss_1 import create_landscape, run_simulation
+from sloss import create_landscape, run_simulation
 
 
 
@@ -46,13 +46,14 @@ def simulate_cached(num_reserves: int, r: float, K: float,
                     m: float, traveldist: float,
                     disturbance_rate: float, disturbance_extent: float,
                     disturbance_severity: float, edge_effect: float,
+                    patchiness: float,
                     run_counter: int, use_seed: bool):
     #Run a full simulation cached on its arguments
     seed = 42 if use_seed else None
     # create_landscape also uses np.random so seeding here makes the whole pipeline reproducible
     if seed is not None:
         np.random.seed(seed)
-    landscape = create_landscape(num_reserves=num_reserves)
+    landscape = create_landscape(num_reserves=num_reserves, patchiness=patchiness)
     pop_history, history = run_simulation(
         landscape,
         r=r, K=K, m=m,
@@ -87,17 +88,17 @@ presets = {
 "default": {
     "L": 50, "num_reserves": 1, "num_reserves2": 16,
     "r": 0.5, "K": 50, "m": 0.05, "traveldist": 5.0, "disturbance_rate": 0.01,
-    "disturbance_severity": 0.5, "disturbance_extent": 5.0, "edge_effect": 1.0,
+    "disturbance_severity": 0.5, "disturbance_extent": 5.0, "edge_effect": 1.0, "patchiness": 0.0,
 },
 "rescue_effect": {
     "L": 50, "num_reserves": 1, "num_reserves2": 16,
     "r": 2.0, "K": 50, "m": 0.05, "traveldist": 5.0, "disturbance_rate": 0.3,
-    "disturbance_severity": 1.0, "disturbance_extent": 11.0, "edge_effect": 1.0,
+    "disturbance_severity": 1.0, "disturbance_extent": 11.0, "edge_effect": 1.0, "patchiness": 0.0,
 },
 "edge_effect": {
     "L": 50, "num_reserves": 1, "num_reserves2": 16,
     "r": 0.2, "K": 50, "m": 0.25, "traveldist": 5.0, "disturbance_rate": 0.01,
-    "disturbance_severity": 0.5, "disturbance_extent": 5.0, "edge_effect": 0.3,
+    "disturbance_severity": 0.5, "disturbance_extent": 5.0, "edge_effect": 0.3, "patchiness": 0.0,
 }
 }
 
@@ -116,6 +117,12 @@ with ctrl_col:
             "Number of reserves (right)",
             min_value=1, max_value=20, value=10, step=1,
             help="Determine how the total habitat is divided (total area is held constant).",
+        )
+
+        patchiness = st.slider(
+            "Patchiness",
+            min_value=0.0, max_value=0.5, value=0.0, step=0.05,
+            help="Fraction of interior cells redistributed to the perimeter.",
         )
 
     with st.expander("**Preset Scenarios**", expanded=True):
@@ -226,7 +233,7 @@ st.session_state.fresh_run = False
 # scrubber to snap to the final timestep of the new run rather than stay
 # wherever it was in the previous run's history
 current_params = (num_reserves, r, K, m, traveldist, disturbance_rate,
-                  disturbance_extent, disturbance_severity, edge_effect,
+                  disturbance_extent, disturbance_severity, edge_effect, patchiness,
                   st.session_state.run_counter)
 if st.session_state.last_params != current_params:
     st.session_state.timestep = None  # signal to default to final
@@ -239,6 +246,7 @@ landscape, pop_history, history = simulate_cached(
     disturbance_extent=disturbance_extent,
     disturbance_severity=disturbance_severity,
     edge_effect=edge_effect,
+    patchiness=patchiness,
     run_counter=st.session_state.run_counter,
     use_seed=use_seed,
 )
@@ -250,6 +258,7 @@ landscape2, pop_history2, history2 = simulate_cached(
     disturbance_extent=disturbance_extent,
     disturbance_severity=disturbance_severity,
     edge_effect=edge_effect,
+    patchiness=patchiness,
     run_counter=st.session_state.run_counter,
     use_seed=use_seed,
 )

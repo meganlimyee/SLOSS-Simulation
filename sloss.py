@@ -32,7 +32,7 @@ num_reserves (int) : distinct number of reserves
 """
 
 
-def create_landscape(L=50, total_area=200, num_reserves=1):
+def create_landscape(L=50, total_area=200, num_reserves=1, patchiness=0.0):
     # create empty np array for landscape and reserves
     landscape = np.zeros((L, L), dtype=bool)
 
@@ -100,7 +100,81 @@ def create_landscape(L=50, total_area=200, num_reserves=1):
         addedExtra += 1
         attempts += 1
 
+    # remove and redistribute cells to patch perimeter to incorporate patchiness. 
+    # introduces edge-to-area ratio toggle (reserve shape) in addition to reserve count
+    if patchiness > 0:
+        #find reserve cells whose 4 neighbors are reserve cells (interior cells)
+        interior_coords = []
+        reserve_coords = np.argwhere(landscape)
+        for x, y in reserve_coords:
+            neighbors = [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)]
+            allInside = True
+            for nx, ny in neighbors:
+                if not (0 <= nx < L and 0 <= ny < L) or not landscape[nx, ny]:
+                    allInside = False
+                    break
+            if allInside:
+                interior_coords.append((x, y))
+ 
+        # convert to a set for fast 2x2 validity checks
+        interior_set = set(interior_coords)
+ 
+        # find candidate 2x2 clumps which are valid if all four of its cells are fully interior
+        candidate_clumps = []
+        for (x, y) in interior_coords:
+            if (x, y+1) in interior_set and (x+1, y) in interior_set and (x+1, y+1) in interior_set:
+                candidate_clumps.append((x, y))
+ 
+        # how many cells to remove from interior and re-add at the perimeter
+        totalCells = int(landscape.sum())
+        numHoles = int(patchiness * totalCells)
+        numClumps = numHoles // 4  #each 2x2 clump removes 4 cells
+ 
+        # remove non-overlapping clumps
+        cellsRemoved = 0
+        if numClumps > 0 and len(candidate_clumps) > 0:
+            np.random.shuffle(candidate_clumps)
+            removed_set = set()
+            for (cx, cy) in candidate_clumps:
+                if cellsRemoved >= numClumps * 4:
+                    break
+                clump_cells = [(cx, cy), (cx, cy+1), (cx+1, cy), (cx+1, cy+1)]
+                if any(c in removed_set for c in clump_cells):
+                    continue  #overlaps with an already-removed clump
+                for (rx, ry) in clump_cells:
+                    landscape[rx, ry] = False
+                    removed_set.add((rx, ry))
+                cellsRemoved += 4
+ 
+        # add the same number of cells back to the perimeter 
+        if cellsRemoved > 0:
+            cellsAdded = 0
+            attempts = 0
+            while cellsAdded < cellsRemoved and attempts < 5000:
+                reserve_coords = np.argwhere(landscape)
+                edgecoords = []
+                for x, y in reserve_coords:
+                    neighbors = [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)]
+                    nextneighbors = [(x - 2, y), (x + 2, y), (x, y - 2), (x, y + 2)]
+                    for nx, ny in neighbors:
+                        if 0 <= nx < L and 0 <= ny < L and not landscape[nx, ny]:
+                            for nnx, nny in nextneighbors:
+                                if 0 <= nnx < L and 0 <= nny < L:
+                                    if not landscape[nnx, nny]:
+                                        edgecoords.append((nx, ny))
+                                else:
+                                    edgecoords.append((nx, ny))
+ 
+                if len(edgecoords) == 0:
+                    break
+ 
+                randEdgex, randEdgey = edgecoords[np.random.randint(len(edgecoords))]
+                landscape[randEdgex, randEdgey] = True
+                cellsAdded += 1
+                attempts += 1
+ 
     return landscape
+
 
 
 """
