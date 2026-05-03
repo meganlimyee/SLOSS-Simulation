@@ -20,19 +20,31 @@ Two changes from the original sloss.py:
 """
 
 
-"""
-Create a landscape, marking reserve habitat cells as True and non-reserve cells as
-False. 
-If multiple habitat areas, he landscape includes a few well-separated habitat patches of roughly equal size.
-
-Params:
-total_area (int): total area of reserve habitat
-num_reserves (int) : distinct number of reserves
-
-"""
-
-
 def create_landscape(L=50, total_area=200, num_reserves=1, patchiness=0.0):
+    """
+    Create a landscape, marking reserve habitat cells as True and non-reserve 
+    cells False. If multiple habitat areas, the landscape includes a few 
+    well-separated habitat patches of roughly equal size.
+
+    Parameters
+    ----------
+    L : int, optional
+        Side length of total square landscape area. The default is 50.
+    total_area : int, optional
+        Total number of habitat cells. The default is 200.
+    num_reserves : int, optional
+        Number of habitat reserves. The default is 1.
+    patchiness : float, optional
+        Fraction of interior cells redistributed to edges for heterogeneity 
+        and roughness. Reasonable range from 0 to 0.5. The default is 0.0.
+
+    Returns
+    -------
+    landscape : (L, L) ndarray
+        Numpy array of booleans where True is inside a reserve and False is
+        outside a reserve.
+
+    """
     # create empty np array for landscape and reserves
     landscape = np.zeros((L, L), dtype=bool)
 
@@ -176,40 +188,60 @@ def create_landscape(L=50, total_area=200, num_reserves=1, patchiness=0.0):
     return landscape
 
 
-
-"""
-Run population dynamics.
-
-Reserve geometry matters because small-scattered reserves lose mroe dispersers to non-habitat, 
-but also might receive rescue immigrants from neighbors.
-
-
-r: polutation growth rate
-K: carrying population capacity per reserve cell
-m: migration rate (# individuals leaving each cell per timestep)
-disturbance_rate: % chance of disturbance per timestep 
-disturbance_severity: % indivuduals removed in affected cells
-disturbance_extent: % of reserve cells affected
-traveldist: distance that individuls disperse
-seed: optional int, seeds numpy's RNG so the run is reproducible. The GUI
-      uses a fixed seed while the user is dragging sliders (so changes show
-      clean parameter effects, not stochastic noise) and None when the user
-      clicks Run (to draw a fresh random realization)
-
-Returns:
-pop_history (list of (L, L) ndarrays): snapshot of the population grid after
-    each timestep. pop_history[-1] is the final state. The GUI uses this to
-    scrub backward/forward through time without re-running
-history (dict): aggregate per-timestep stats (total_pop, occupancy,
-    num_occupied_reserves), same as the original
-
-"""
-
-
 def run_simulation(landscape, timesteps=100, r=0.5, K=50, m=0.05,
                    disturbance_rate=0.01, disturbance_severity=0.5,
                    disturbance_extent=0.1, traveldist=10,
                    edge_effect=1.0, seed=None):
+    """
+    Simulates population in the landscape over time. 
+
+    Parameters
+    ----------
+    landscape : (L, L) ndarray
+        Array of booleans indicating where reserves are as True.
+    timesteps : int, optional
+        Number of timesteps to run the simulation over. The default is 100.
+    r : float, optional
+        Growth rate of the logistic population model. The default is 0.5.
+    K : int or float, optional
+        Carrying capacity of the logistic population model. The default is 50.
+    m : float, optional
+        Fraction of individuals that migrate each timestep. Possible values
+        from 0 to 1. The default is 0.05.
+    disturbance_rate : float, optional
+        Chance that a disturbance occurs each timestep. Possible values from
+        0 to 1. The default is 0.01.
+    disturbance_severity : float, optional
+        Fraction of individuals that are killed when a disturbance hits.
+        Possible values from 0 to 1. The default is 0.5.
+    disturbance_extent : int or float, optional
+        Radius of disturbances. The default is 0.1.
+    traveldist : int or float, optional
+        The standard deviation of the Gaussian kernel used to spread migrants
+        out. The default is 10.
+    edge_effect : float, optional
+        Whether a species prefers or dislikes edge habitat. Acts as a 
+        multiplier on edge habitat carrying capacity. Values from 0 to 1 
+        mean edge habitat supports less individuals than the interior, and 
+        values geater than 1 mean the edge habitat supports more individuals
+        than the interior. The default is 1.0, which represents no species
+        preference for edge or interior habitat.
+    seed : int, optional
+        Seed for random number generation enables reproducibility. This
+        controls random events such as disturbances. The default is None.
+
+    Returns
+    -------
+    pop_history : list of (L, L) ndarrays
+        Snapshot of the population grid after each timestep. pop_history[-1] 
+        is the final state. The GUI uses this to scrub backward/forward 
+        through time without re-running
+    history : dict
+        Dictionary with keys total_pop, occupancy, num_occupied_reserves, and
+        disturbance_events. THe values are lists that contain the values of 
+        these aggregated statistics for each timestep.
+
+    """
 
     # seed the RNG for reproducible runs (used by the GUI's slider-drag mode)
     if seed is not None:
