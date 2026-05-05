@@ -1,27 +1,23 @@
 """
-SLOSS Simulator — Streamlit GUI Iteration 2: timestep scrubber
+SLOSS Simulator — Streamlit GUI
 
+Interactive interface of sloss.py. Allows the user to compare two reserve configurations
+(single large, severall small) side by side, under chosen populations, dispersal, and
+disturbance parameters via sliders. 
 
-Iiteration 1: end-to-end scaffold
-
-Implements minimal slider change (number of reserves)-> cached simulation -> landscape plot.
-Established the architecture we could build on:
-  - run_counter in session_state forces fresh runs on the Run button
-    while letting slider drags reuse cached (seed=42) results
+Key Components:
   - simulate_cached() is keyed on parameters + run_counter, so identical
     inputs return
-
-Iteration 2: timestep scrubber
- - timestep scrubber slider lets  user replay the simulation history
- - landscape shows pop_history[t] instead of always the final state
- - scrubber defaults to the final timestep when parameters change or Run
+  - run_counter in session_state forces fresh runs on the Run button
+    while letting slider drags reuse cached (seed=42) results
+  - timestep scrubber slider lets  user replay the simulation history
+  - landscape shows pop_history[t] instead of always the final state
+  - scrubber defaults to the final timestep when parameters change or Run
     is clicked
-
-Future iterations could implement:
-- time-series plots with synchronized playhead
-- advanced parameter panels
-- presets to simulate realistic conditions (to learn important aspects of SLOSS)
-    - currently it is free parameter exploration, it may be hard to grasp SLOSS effects
+  - a timestep scrubber replays pop_history[t] without re-running the
+    simulation
+  - preset buttons load parameter combinations that highlight specific
+    SLOSS effects (rescue effect, high roaming).
 
 """
 
@@ -48,7 +44,65 @@ def simulate_cached(num_reserves: int, r: float, K: float,
                     disturbance_severity: float, edge_effect: float,
                     patchiness: float,
                     run_counter: int, use_seed: bool):
-    #Run a full simulation cached on its arguments
+    """
+    Build a landscape and run a full simulation, caching the result on its
+    arguments. Slider drags reuse the cached result; clicking Run increments
+    run_counter to bust the cache and produce a fresh stochastic realization.
+
+    Parameters
+    ----------
+    num_reserves : int
+        Number of habitat reserves to place in the landscape. Passed through
+        to create_landscape.
+    r : float
+        Per-capita growth rate for the logistic population model.
+    K : int or float
+        Carrying capacity per cell for the logistic population model.
+    m : float
+        Fraction of individuals that migrate out of each cell per timestep.
+        Possible values from 0 to 1.
+    traveldist : int or float
+        Standard deviation of the Gaussian dispersal kernel.
+    disturbance_rate : float
+        Probability that a disturbance event occurs each timestep. Possible
+        values from 0 to 1.
+    disturbance_extent : float
+        Radius of disturbance events in cells.
+    disturbance_severity : float
+        Fraction of individuals removed in disturbed cells. Possible values
+        from 0 to 1.
+    edge_effect : float
+        Whether a species prefers or dislikes edge habitat. Acts as a 
+        multiplier on edge habitat carrying capacity. Values from 0 to 1 
+        mean edge habitat supports less individuals than the interior, and 
+        values geater than 1 mean the edge habitat supports more individuals
+        than the interior. The default is 1.0, which represents no species
+        preference for edge or interior habitat.
+    patchiness : float
+        Fraction of interior cells redistributed to edges for heterogeneity 
+        and roughness. Reasonable range from 0 to 0.5. The default is 0.0.
+    run_counter : int
+        Counter incremented every time the Run button is clicked. Clicking Run 
+        forces a fresh simulation even when the other parameters are unchanged.
+    use_seed : bool
+        If True, use a fixed seed so that slider drags produce clean,
+        reproducible parameter exploration. If False, run with fresh
+        randomness.
+
+    Returns
+    -------
+    landscape : (L, L) ndarray
+        Array of booleans indicating where reserves are as True.
+    pop_history : list of (L, L) ndarrays
+        Snapshot of the population grid after each timestep. pop_history[-1]
+        is the final state. The GUI uses this to scrub backward/forward
+        through time without re-running.
+    history : dict
+        Dictionary with keys total_pop, occupancy, num_occupied_reserves, and
+        disturbance_events. The values are lists that contain the values of
+        these aggregated statistics for each timestep.
+
+    """
     seed = 42 if use_seed else None
     # create_landscape also uses np.random so seeding here makes the whole pipeline reproducible
     if seed is not None:
@@ -84,6 +138,8 @@ if "run_counter" not in st.session_state:
 ############ Layout: vizual on left, controls on right ########################
 
 #preset scenarios that show specific effects we want to showcase
+# num_reserves and num_reserves2 are the two reserve counts shown side-by-side
+# (left and right respectively) so the user can compare SL vs SS.
 presets = {
 "default": {
     "L": 50, "num_reserves": 1, "num_reserves2": 16,
@@ -126,7 +182,10 @@ with ctrl_col:
         )
 
     with st.expander("**Preset Scenarios**", expanded=True):
-        #create a version counter which will reset sliders every time a preset is used
+        # create a version counter which will reset sliders every time a preset is used
+        # exists will ignore a new `value=` default 
+        # suffix sliders with `preset_version` to bump counter on each click
+        # to push new values to slider
         if 'preset_version' not in st.session_state:
             st.session_state.preset_version = 0
         if st.button("Default", width='stretch'):
@@ -239,6 +298,9 @@ if st.session_state.last_params != current_params:
     st.session_state.timestep = None  # signal to default to final
     st.session_state.last_params = current_params
 
+# run two simulations with identical parameters except for reserve count
+# (num_reserves vs num_reserves2), so the user can compare SL vs SS side by side
+# under selected dispersal, and disturbance conditions.
 landscape, pop_history, history = simulate_cached(
     num_reserves=num_reserves, r=r, K=K, m=m,
     traveldist=traveldist,
@@ -275,12 +337,29 @@ disturb_persistence = 5
 
 def overlay_disturbances(fig, disturbance_events, ts_current):
     """
-    Draw a red circle on figures for each disturbance that fired, sustained by
-    the number of timeframe set above via disturb_persistence.
+    Draw a red circle on a figure for each recent disturbance event, sustained
+    on screen for disturb_persistence timesteps after the event fired.
 
-    disturbance_events: list of tuples from history['disturbance_events']
-                    (t, center_y, center_x, radius)
-    ts_current: the timestep currently shown on scrubber
+    Parameters
+    ----------
+    fig : plotly.graph_objects.Figure
+        The Plotly figure to draw the disturbance overlays onto. Modified in
+        place via fig.add_shape.
+    disturbance_events : list of tuple
+        List of disturbance event tuples from history['disturbance_events'],
+        each of the form (t, center_y, center_x, radius), where t is the
+        timestep the disturbance fired, (center_y, center_x) is the center
+        cell, and radius is the disturbance radius in cells.
+    ts_current : int
+        The timestep currently displayed on the scrubber. Disturbances are
+        only drawn if their event timestep is within disturb_persistence
+        frames before ts_current.
+
+    Returns
+    -------
+    None
+        Figure is modified and nothing is returned.
+
     """
     for (event_t, cy, cx, radius) in disturbance_events:
         sustain = ts_current - event_t
@@ -307,9 +386,14 @@ timestep = st.slider(
 st.session_state.timestep = timestep
 st.subheader("Population")
 
+# both heatmaps share zmax = max(K, K * edge_effect) so the colorbar scheme
+# is the same when either population exceeds 20 (when edge_effect > 1)
 viz_col, viz_col2 = st.columns(2)
 
 with viz_col:
+    # Left panel: landscape heatmap, population view, and three time-series 
+    # plots (total population, cell occupancy, occupied reserves) for the first
+    # reserve configuration.
 
     pop_at_t = pop_history[timestep]
 
@@ -419,6 +503,9 @@ with viz_col:
     
 with viz_col2:
 
+    # Right panel: landscape heatmap, population view, and three time-series 
+    # plots (total population, cell occupancy, occupied reserves) for the second
+    # reserve configuration.
     st.session_state.timestep = timestep
 
     pop_at_t2 = pop_history2[timestep]
