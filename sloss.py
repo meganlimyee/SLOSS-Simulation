@@ -45,6 +45,19 @@ def create_landscape(L=50, total_area=200, num_reserves=1, patchiness=0.0):
         outside a reserve.
 
     """
+    # error handling
+    if not isinstance(L, int) or L <= 0:
+        raise ValueError(f"L must be a positive integer, got {L}")
+    if not isinstance(num_reserves, int) or num_reserves < 1:
+        raise ValueError(
+            f"num_reserves must be a positive integer, got {num_reserves}")
+    if total_area <= 0 or total_area > L * L:
+        raise ValueError(
+            f"total_area must be in (0, L*L={L * L}], got {total_area}")
+    if not 0.0 <= patchiness <= 1.0:
+        raise ValueError(
+            f"patchiness must be between 0 and 1, got {patchiness}")
+
     # create empty np array for landscape and reserves
     landscape = np.zeros((L, L), dtype=bool)
 
@@ -246,6 +259,36 @@ def run_simulation(landscape, timesteps=100, r=0.5, K=50, m=0.05,
         these aggregated statistics for each timestep.
 
     """
+
+    # error handling
+    if not isinstance(landscape, np.ndarray) or landscape.ndim != 2:
+        raise TypeError("landscape must be a 2D numpy array")
+    if landscape.dtype != bool:
+        raise TypeError(
+            f"landscape must be a boolean array: {landscape.dtype}")
+    if not isinstance(timesteps, int) or timesteps < 1:
+        raise ValueError(
+            f"timesteps must be a positive integer:{timesteps}")
+    if r < 0:
+        raise ValueError(f"r (growth rate) must be non-negative:{r}")
+    if K <= 0:
+        raise ValueError(f"K (carrying capacity) must be positive:{K}")
+    if not 0.0 <= m <= 1.0:
+        raise ValueError(
+            f"m (migration fraction) must be between 0 and 1:{m}")
+    if not 0.0 <= disturbance_rate <= 1.0:
+        raise ValueError(
+            f"disturbance_rate must be between 0 and 1: {disturbance_rate}")
+    if not 0.0 <= disturbance_severity <= 1.0:
+        raise ValueError(
+            f"disturbance_severity must be between 0 and 1: {disturbance_severity}")
+    if disturbance_extent < 0:
+        raise ValueError(
+            f"disturbance_extent must be non-negative: {disturbance_extent}")
+    if traveldist <= 0:
+        raise ValueError(f"traveldist must be positive: {traveldist}")
+    if edge_effect < 0:
+        raise ValueError(f"edge_effect must be non-negative: {edge_effect}")
 
     # seed the RNG for reproducible runs (used by the GUI's slider-drag mode)
     if seed is not None:
