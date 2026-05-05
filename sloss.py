@@ -287,8 +287,8 @@ def run_simulation(landscape, timesteps=100, r=0.5, K=50, m=0.05,
             f"disturbance_extent must be non-negative: {disturbance_extent}")
     if traveldist <= 0:
         raise ValueError(f"traveldist must be positive: {traveldist}")
-    if edge_effect < 0:
-        raise ValueError(f"edge_effect must be non-negative: {edge_effect}")
+    if edge_effect <= 0:
+        raise ValueError(f"edge_effect must be positive: {edge_effect}")
 
     # seed the RNG for reproducible runs (used by the GUI's slider-drag mode)
     if seed is not None:
