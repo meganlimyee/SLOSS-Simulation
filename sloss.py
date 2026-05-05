@@ -7,7 +7,7 @@ Notes on the program:
 Ecology simulation exploring the classic SLOSS ( "Single Large Or Several Small" reserves) debate.
 If total protected habitat area is the same, is it better to protect one large area or several smaller areas?
 Build a landscape, place habiat reserves, and simulate polulations living in those reserves over time based on
-population growth, emigration, and disturbances.
+population growth, dispersal, and disturbances.
 
 Simulation core used by the Streamlit GUI (app.py)
 Two changes from the original sloss.py:
@@ -223,7 +223,7 @@ def run_simulation(landscape, timesteps=100, r=0.5, K=50, m=0.05,
     K : int or float, optional
         Carrying capacity of the logistic population model. The default is 50.
     m : float, optional
-        Fraction of individuals that migrate each timestep. Possible values
+        Fraction of individuals that disperse each timestep. Possible values
         from 0 to 1. The default is 0.05.
     disturbance_rate : float, optional
         Chance that a disturbance occurs each timestep. Possible values from
@@ -275,7 +275,7 @@ def run_simulation(landscape, timesteps=100, r=0.5, K=50, m=0.05,
         raise ValueError(f"K (carrying capacity) must be positive:{K}")
     if not 0.0 <= m <= 1.0:
         raise ValueError(
-            f"m (migration fraction) must be between 0 and 1:{m}")
+            f"m (dispersal fraction) must be between 0 and 1:{m}")
     if not 0.0 <= disturbance_rate <= 1.0:
         raise ValueError(
             f"disturbance_rate must be between 0 and 1: {disturbance_rate}")
@@ -320,7 +320,7 @@ def run_simulation(landscape, timesteps=100, r=0.5, K=50, m=0.05,
     # per-timestep snapshots of the full population grid, for GUI scrubbing
     pop_history = []
 
-    # kernel for immigration, with decreasing likelihood (Gaussian distrib) the further out we go
+    # kernel for dispersal, with decreasing likelihood (Gaussian distrib) the further out we go
     # scale the kernel side with traveldist so larger dispersal distances aren't truncated
     kernelSize = int(6 * traveldist)
     # ensure odd kernel side length so our original cell is at the center
@@ -334,7 +334,7 @@ def run_simulation(landscape, timesteps=100, r=0.5, K=50, m=0.05,
     # normalize so sum of probabilities equals 1
     dispersal_kernel = dispersal_kernel / dispersal_kernel.sum()
 
-    # repeat process of growth, immigration, disturbance for timesteps
+    # repeat process of growth, dispersal, disturbance for timesteps
     for t in range(timesteps):
 
         # 1. Logistic growth of  ulation in each cell (standard-density growth equation)
@@ -345,7 +345,7 @@ def run_simulation(landscape, timesteps=100, r=0.5, K=50, m=0.05,
         pop = np.clip(pop, 0, None)  # disallow negative populations
 
         # 2. Dispersal
-        # a fraction of each reserve's population emigrates, getting redistributed across grid via convolution
+        # a fraction of each reserve's population disperses, getting redistributed across grid via convolution
         # with Gaussian kernel.
         emigrants = pop * m  # how many individuals are leaving from each cell
         # each cell's base population decreases as some leave

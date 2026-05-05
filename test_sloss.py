@@ -191,9 +191,9 @@ class TestRunSimulation(unittest.TestCase):
         with self.assertRaises(TypeError):
             run_simulation(bad_landscape, timesteps=5)
 
-    def test_migration_fraction(self):
+    def test_dispersal_fraction(self):
         """
-        Check that migration fraction m outside [0, 1] raises an error.
+        Check that dispersal fraction m outside [0, 1] raises an error.
 
         Returns
         -------

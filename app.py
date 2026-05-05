@@ -58,7 +58,7 @@ def simulate_cached(num_reserves: int, r: float, K: float,
     K : int or float
         Carrying capacity per cell for the logistic population model.
     m : float
-        Fraction of individuals that migrate out of each cell per timestep.
+        Fraction of individuals that disperse out of each cell per timestep.
         Possible values from 0 to 1.
     traveldist : int or float
         Standard deviation of the Gaussian dispersal kernel.
@@ -196,7 +196,7 @@ with ctrl_col:
             st.session_state.preset = "rescue_effect"
             st.session_state.preset_version += 1
             st.rerun()
-        st.text("High migration, low growth rate:")
+        st.text("High dispersal, low growth rate:")
         if st.button("High Roaming (Favors SL)", width='stretch'):
             st.session_state.preset = "edge_effect"
             st.session_state.preset_version += 1
@@ -231,11 +231,11 @@ with ctrl_col2:
             key=f"slider_edge_effect{v}"
         )
 
-    with st.expander("**Migration Parameters**", expanded=True):
+    with st.expander("**Dispersal Parameters**", expanded=True):
         m = st.slider(
-            "Percent of individuals migrating per cell per timestep",
+            "Percent of individuals dispersing from each cell per timestep",
             min_value=0.0, max_value=0.25, value=current_preset['m'], step=0.01,
-            help="Higher migration moves more individuals out of source cells. Whether that helps or hurts depends on dispersal distance and reserve geometry.", key=f"slider_m{v}"
+            help="Higher dispersal moves more individuals out of source cells. Whether that helps or hurts depends on dispersal distance and reserve geometry.", key=f"slider_m{v}"
         )
 
         traveldist = st.slider(
