@@ -112,10 +112,10 @@ def create_landscape(L=50, total_area=200, num_reserves=1, patchiness=0.0):
         addedExtra += 1
         attempts += 1
 
-    # remove and redistribute cells to patch perimeter to incorporate patchiness. 
+    # remove and redistribute cells to patch perimeter to incorporate patchiness.
     # introduces edge-to-area ratio toggle (reserve shape) in addition to reserve count
     if patchiness > 0:
-        #find reserve cells whose 4 neighbors are reserve cells (interior cells)
+        # find reserve cells whose 4 neighbors are reserve cells (interior cells)
         interior_coords = []
         reserve_coords = np.argwhere(landscape)
         for x, y in reserve_coords:
@@ -127,21 +127,21 @@ def create_landscape(L=50, total_area=200, num_reserves=1, patchiness=0.0):
                     break
             if allInside:
                 interior_coords.append((x, y))
- 
+
         # convert to a set for fast 2x2 validity checks
         interior_set = set(interior_coords)
- 
+
         # find candidate 2x2 clumps which are valid if all four of its cells are fully interior
         candidate_clumps = []
         for (x, y) in interior_coords:
-            if (x, y+1) in interior_set and (x+1, y) in interior_set and (x+1, y+1) in interior_set:
+            if (x, y + 1) in interior_set and (x + 1, y) in interior_set and (x + 1, y + 1) in interior_set:
                 candidate_clumps.append((x, y))
- 
+
         # how many cells to remove from interior and re-add at the perimeter
         totalCells = int(landscape.sum())
         numHoles = int(patchiness * totalCells)
-        numClumps = numHoles // 4  #each 2x2 clump removes 4 cells
- 
+        numClumps = numHoles // 4  # each 2x2 clump removes 4 cells
+
         # remove non-overlapping clumps
         cellsRemoved = 0
         if numClumps > 0 and len(candidate_clumps) > 0:
@@ -150,15 +150,16 @@ def create_landscape(L=50, total_area=200, num_reserves=1, patchiness=0.0):
             for (cx, cy) in candidate_clumps:
                 if cellsRemoved >= numClumps * 4:
                     break
-                clump_cells = [(cx, cy), (cx, cy+1), (cx+1, cy), (cx+1, cy+1)]
+                clump_cells = [(cx, cy), (cx, cy + 1),
+                               (cx + 1, cy), (cx + 1, cy + 1)]
                 if any(c in removed_set for c in clump_cells):
-                    continue  #overlaps with an already-removed clump
+                    continue  # overlaps with an already-removed clump
                 for (rx, ry) in clump_cells:
                     landscape[rx, ry] = False
                     removed_set.add((rx, ry))
                 cellsRemoved += 4
- 
-        # add the same number of cells back to the perimeter 
+
+        # add the same number of cells back to the perimeter
         if cellsRemoved > 0:
             cellsAdded = 0
             attempts = 0
@@ -166,8 +167,10 @@ def create_landscape(L=50, total_area=200, num_reserves=1, patchiness=0.0):
                 reserve_coords = np.argwhere(landscape)
                 edgecoords = []
                 for x, y in reserve_coords:
-                    neighbors = [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)]
-                    nextneighbors = [(x - 2, y), (x + 2, y), (x, y - 2), (x, y + 2)]
+                    neighbors = [(x - 1, y), (x + 1, y),
+                                 (x, y - 1), (x, y + 1)]
+                    nextneighbors = [(x - 2, y), (x + 2, y),
+                                     (x, y - 2), (x, y + 2)]
                     for nx, ny in neighbors:
                         if 0 <= nx < L and 0 <= ny < L and not landscape[nx, ny]:
                             for nnx, nny in nextneighbors:
@@ -176,15 +179,16 @@ def create_landscape(L=50, total_area=200, num_reserves=1, patchiness=0.0):
                                         edgecoords.append((nx, ny))
                                 else:
                                     edgecoords.append((nx, ny))
- 
+
                 if len(edgecoords) == 0:
                     break
- 
-                randEdgex, randEdgey = edgecoords[np.random.randint(len(edgecoords))]
+
+                randEdgex, randEdgey = edgecoords[np.random.randint(
+                    len(edgecoords))]
                 landscape[randEdgex, randEdgey] = True
                 cellsAdded += 1
                 attempts += 1
- 
+
     return landscape
 
 
@@ -267,7 +271,7 @@ def run_simulation(landscape, timesteps=100, r=0.5, K=50, m=0.05,
         'total_pop': [],  # total population
         'occupancy': [],  # fraction of reserve cells with pop > 1
         'num_occupied_reserves': [],
-        'disturbance_events': [] # disturbance event tuples with timestep, radius, center data
+        'disturbance_events': []  # disturbance event tuples with timestep, radius, center data
     }
 
     # per-timestep snapshots of the full population grid, for GUI scrubbing
@@ -318,21 +322,23 @@ def run_simulation(landscape, timesteps=100, r=0.5, K=50, m=0.05,
         if np.random.rand() < disturbance_rate:
             # check for reserve cells (marked True)
             reserve_coords = np.argwhere(landscape)
-            
-            #randomly pick a reserve coord to be the center of the disturbance
+
+            # randomly pick a reserve coord to be the center of the disturbance
             random_index = np.random.randint(len(reserve_coords))
             disturbCenterY, disturbCenterX = reserve_coords[random_index]
-            
+
             y_grid, x_grid = np.ogrid[0:L, 0:L]
-            distances = np.sqrt((y_grid - disturbCenterY)**2 + (x_grid - disturbCenterX)**2)
-            
-            #reduce population if distance from center is less than disturbance_extent
+            distances = np.sqrt((y_grid - disturbCenterY) **
+                                2 + (x_grid - disturbCenterX)**2)
+
+            # reduce population if distance from center is less than disturbance_extent
             disturbed = distances <= disturbance_extent
             pop[disturbed] *= (1 - disturbance_severity)
 
-            #record event so the GUI can draw a red circle on the landscape
+            # record event so the GUI can draw a red circle on the landscape
             history['disturbance_events'].append(
-                (t, int(disturbCenterY), int(disturbCenterX), float(disturbance_extent))
+                (t, int(disturbCenterY), int(
+                    disturbCenterX), float(disturbance_extent))
             )
 
         # record this timestep's full grid (.copy() so future timesteps don't overwrite it)
@@ -340,7 +346,7 @@ def run_simulation(landscape, timesteps=100, r=0.5, K=50, m=0.05,
 
         history['total_pop'].append(float(pop.sum()))
         history['occupancy'].append(
-            float((pop[landscape] > 1).sum() / landscape.sum())*100)
+            float((pop[landscape] > 1).sum() / landscape.sum()) * 100)
 
         occupiedReserve = 0
         for i in range(1, numReserves + 1):
@@ -349,4 +355,3 @@ def run_simulation(landscape, timesteps=100, r=0.5, K=50, m=0.05,
         history['num_occupied_reserves'].append(occupiedReserve)
 
     return pop_history, history
-

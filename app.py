@@ -28,7 +28,6 @@ import streamlit as st
 from sloss import create_landscape, run_simulation
 
 
-
 ############ Cached simulation ############
 
 # when the user clicks Run, we increment run_counter, which busts cache and produces
@@ -107,7 +106,8 @@ def simulate_cached(num_reserves: int, r: float, K: float,
     # create_landscape also uses np.random so seeding here makes the whole pipeline reproducible
     if seed is not None:
         np.random.seed(seed)
-    landscape = create_landscape(num_reserves=num_reserves, patchiness=patchiness)
+    landscape = create_landscape(
+        num_reserves=num_reserves, patchiness=patchiness)
     pop_history, history = run_simulation(
         landscape,
         r=r, K=K, m=m,
@@ -134,28 +134,27 @@ if "run_counter" not in st.session_state:
     st.session_state.last_params = None  # for detecting parameter changes
 
 
-
 ############ Layout: vizual on left, controls on right ########################
 
-#preset scenarios that show specific effects we want to showcase
+# preset scenarios that show specific effects we want to showcase
 # num_reserves and num_reserves2 are the two reserve counts shown side-by-side
 # (left and right respectively) so the user can compare SL vs SS.
 presets = {
-"default": {
-    "L": 50, "num_reserves": 1, "num_reserves2": 16,
-    "r": 0.5, "K": 50, "m": 0.05, "traveldist": 5.0, "disturbance_rate": 0.01,
-    "disturbance_severity": 0.5, "disturbance_extent": 5.0, "edge_effect": 1.0, "patchiness": 0.0,
-},
-"rescue_effect": {
-    "L": 50, "num_reserves": 1, "num_reserves2": 16,
-    "r": 2.0, "K": 50, "m": 0.05, "traveldist": 5.0, "disturbance_rate": 0.3,
-    "disturbance_severity": 1.0, "disturbance_extent": 11.0, "edge_effect": 1.0, "patchiness": 0.0,
-},
-"edge_effect": {
-    "L": 50, "num_reserves": 1, "num_reserves2": 16,
-    "r": 0.2, "K": 50, "m": 0.25, "traveldist": 5.0, "disturbance_rate": 0.01,
-    "disturbance_severity": 0.5, "disturbance_extent": 5.0, "edge_effect": 0.3, "patchiness": 0.0,
-}
+    "default": {
+        "L": 50, "num_reserves": 1, "num_reserves2": 16,
+        "r": 0.5, "K": 50, "m": 0.05, "traveldist": 5.0, "disturbance_rate": 0.01,
+        "disturbance_severity": 0.5, "disturbance_extent": 5.0, "edge_effect": 1.0, "patchiness": 0.0,
+    },
+    "rescue_effect": {
+        "L": 50, "num_reserves": 1, "num_reserves2": 16,
+        "r": 2.0, "K": 50, "m": 0.05, "traveldist": 5.0, "disturbance_rate": 0.3,
+        "disturbance_severity": 1.0, "disturbance_extent": 11.0, "edge_effect": 1.0, "patchiness": 0.0,
+    },
+    "edge_effect": {
+        "L": 50, "num_reserves": 1, "num_reserves2": 16,
+        "r": 0.2, "K": 50, "m": 0.25, "traveldist": 5.0, "disturbance_rate": 0.01,
+        "disturbance_severity": 0.5, "disturbance_extent": 5.0, "edge_effect": 0.3, "patchiness": 0.0,
+    }
 }
 
 st.subheader("Controls")
@@ -183,7 +182,7 @@ with ctrl_col:
 
     with st.expander("**Preset Scenarios**", expanded=True):
         # create a version counter which will reset sliders every time a preset is used
-        # exists will ignore a new `value=` default 
+        # exists will ignore a new `value=` default
         # suffix sliders with `preset_version` to bump counter on each click
         # to push new values to slider
         if 'preset_version' not in st.session_state:
@@ -202,14 +201,14 @@ with ctrl_col:
             st.session_state.preset = "edge_effect"
             st.session_state.preset_version += 1
             st.rerun()
-        
+
 
 with ctrl_col2:
     if 'preset' not in st.session_state:
         st.session_state.preset = "default"
 
     current_preset = presets[st.session_state.preset]
-    #updates keys when presets pressed, resetting slider
+    # updates keys when presets pressed, resetting slider
     v = st.session_state.preset_version
 
     with st.expander("**Logistic Growth Parameters**", expanded=True):
@@ -279,8 +278,6 @@ with ctrl_col3:
         "fixed (same random seed). Click **Run** to draw a fresh random "
         "realization with the current parameters."
     )
-
-
 
 
 # Decide which mode we're in for this render
@@ -370,7 +367,7 @@ def overlay_disturbances(fig, disturbance_events, ts_current):
                 x0=cx - radius, y0=cy - radius,
                 x1=cx + radius, y1=cy + radius,
                 line=dict(color="red", width=2),
-                fillcolor="rgba(0,0,0,0)", 
+                fillcolor="rgba(0,0,0,0)",
             )
 
 
@@ -391,7 +388,7 @@ st.subheader("Population")
 viz_col, viz_col2 = st.columns(2)
 
 with viz_col:
-    # Left panel: landscape heatmap, population view, and three time-series 
+    # Left panel: landscape heatmap, population view, and three time-series
     # plots (total population, cell occupancy, occupied reserves) for the first
     # reserve configuration.
 
@@ -405,7 +402,7 @@ with viz_col:
             colorbar=dict(title="Population"),
         )
     )
-    
+
     landscape_float = landscape.astype(float)
 
     fig.add_trace(go.Contour(
@@ -415,7 +412,7 @@ with viz_col:
             end=0.5,
             size=1,
             showlabels=False,
-            coloring='none' # just want outline around reserve locations
+            coloring='none'  # just want outline around reserve locations
         ),
         line=dict(
             color='black',
@@ -428,13 +425,14 @@ with viz_col:
 
     overlay_disturbances(fig, history['disturbance_events'], timestep)
 
-
     bound = pop_at_t.shape[0]
     fig.update_layout(
         width=600, height=600,
         margin=dict(l=10, r=10, t=10, b=10),
         xaxis=dict(range=[-0.5, bound - 0.5], constrain="domain"),
-        yaxis=dict(scaleanchor="x", range=[bound - 0.5, -0.5], constrain="domain"),  # reversed for imshow
+        # reversed for imshow
+        yaxis=dict(scaleanchor="x", range=[
+                   bound - 0.5, -0.5], constrain="domain"),
     )
     st.plotly_chart(fig, width='stretch', key='colormap')
 
@@ -443,11 +441,11 @@ with viz_col:
         f"Total population: **{pop_at_t.sum():.0f}**  •  "
         f"Reserves occupied: **{history['num_occupied_reserves'][timestep]}**"
     )
-    
+
     st.subheader("Statistics Over Time")
-   
+
     # Total Population
-    fig_pop = go.Figure() 
+    fig_pop = go.Figure()
     fig_pop.add_trace(go.Scatter(
         y=history['total_pop'],
         mode='lines',
@@ -455,7 +453,8 @@ with viz_col:
         name='Total Population'
     ))
     # add line which shows which timestep we are at on the plot
-    fig_pop.add_vline(x=timestep, line_dash="dash", line_color="red", opacity=0.7)
+    fig_pop.add_vline(x=timestep, line_dash="dash",
+                      line_color="red", opacity=0.7)
     fig_pop.update_layout(
         title="Total Population over Time",
         xaxis_title="Timestep",
@@ -464,7 +463,7 @@ with viz_col:
         margin=dict(l=10, r=10, t=40, b=10)
     )
     st.plotly_chart(fig_pop, width='stretch', key='pop')
-    
+
     # Occupancy
     fig_occ = go.Figure()
     fig_occ.add_trace(go.Scatter(
@@ -473,7 +472,8 @@ with viz_col:
         line=dict(color='green', width=2),
         name='Occupancy'
     ))
-    fig_occ.add_vline(x=timestep, line_dash="dash", line_color="red", opacity=0.7)
+    fig_occ.add_vline(x=timestep, line_dash="dash",
+                      line_color="red", opacity=0.7)
     fig_occ.update_layout(
         title="Reserve Cell Occupancy over Time (more than 1 individual)",
         xaxis_title="Timestep",
@@ -482,7 +482,7 @@ with viz_col:
         margin=dict(l=10, r=10, t=40, b=10)
     )
     st.plotly_chart(fig_occ, width='stretch', key='occ')
-    
+
     # Number of Occupied Reserves
     fig_reserves = go.Figure()
     fig_reserves.add_trace(go.Scatter(
@@ -491,7 +491,8 @@ with viz_col:
         line=dict(color='orange', width=2),
         name='Occupied Reserves'
     ))
-    fig_reserves.add_vline(x=timestep, line_dash="dash", line_color="red", opacity=0.7)
+    fig_reserves.add_vline(x=timestep, line_dash="dash",
+                           line_color="red", opacity=0.7)
     fig_reserves.update_layout(
         title="Number of Reserves Occupied over Time (more than 10 individuals)",
         xaxis_title="Timestep",
@@ -500,10 +501,10 @@ with viz_col:
         margin=dict(l=10, r=10, t=40, b=10)
     )
     st.plotly_chart(fig_reserves, width='stretch', key='reserves')
-    
+
 with viz_col2:
 
-    # Right panel: landscape heatmap, population view, and three time-series 
+    # Right panel: landscape heatmap, population view, and three time-series
     # plots (total population, cell occupancy, occupied reserves) for the second
     # reserve configuration.
     st.session_state.timestep = timestep
@@ -518,7 +519,7 @@ with viz_col2:
             colorbar=dict(title="Population"),
         )
     )
-    
+
     landscape_float2 = landscape2.astype(float)
 
     fig2.add_trace(go.Contour(
@@ -528,7 +529,7 @@ with viz_col2:
             end=0.5,
             size=1,
             showlabels=False,
-            coloring='none' # just want outline around reserve locations
+            coloring='none'  # just want outline around reserve locations
         ),
         line=dict(
             color='black',
@@ -555,11 +556,11 @@ with viz_col2:
         f"Total population: **{pop_at_t2.sum():.0f}**  •  "
         f"Reserves occupied: **{history2['num_occupied_reserves'][timestep]}**"
     )
-    
+
     st.subheader("Statistics Over Time")
-   
+
     # Total Population
-    fig_pop2 = go.Figure() 
+    fig_pop2 = go.Figure()
     fig_pop2.add_trace(go.Scatter(
         y=history2['total_pop'],
         mode='lines',
@@ -567,7 +568,8 @@ with viz_col2:
         name='Total Population'
     ))
     # add line which shows which timestep we are at on the plot
-    fig_pop2.add_vline(x=timestep, line_dash="dash", line_color="red", opacity=0.7)
+    fig_pop2.add_vline(x=timestep, line_dash="dash",
+                       line_color="red", opacity=0.7)
     fig_pop2.update_layout(
         title="Total Population over Time",
         xaxis_title="Timestep",
@@ -576,7 +578,7 @@ with viz_col2:
         margin=dict(l=10, r=10, t=40, b=10)
     )
     st.plotly_chart(fig_pop2, width='stretch', key='pop2')
-    
+
     # Occupancy
     fig_occ2 = go.Figure()
     fig_occ2.add_trace(go.Scatter(
@@ -585,7 +587,8 @@ with viz_col2:
         line=dict(color='green', width=2),
         name='Occupancy'
     ))
-    fig_occ2.add_vline(x=timestep, line_dash="dash", line_color="red", opacity=0.7)
+    fig_occ2.add_vline(x=timestep, line_dash="dash",
+                       line_color="red", opacity=0.7)
     fig_occ2.update_layout(
         title="Reserve Cell Occupancy over Time (more than 1 individual)",
         xaxis_title="Timestep",
@@ -594,7 +597,7 @@ with viz_col2:
         margin=dict(l=10, r=10, t=40, b=10)
     )
     st.plotly_chart(fig_occ2, width='stretch', key='occ2')
-    
+
     # Number of Occupied Reserves
     fig_reserves2 = go.Figure()
     fig_reserves2.add_trace(go.Scatter(
@@ -603,7 +606,8 @@ with viz_col2:
         line=dict(color='orange', width=2),
         name='Occupied Reserves'
     ))
-    fig_reserves2.add_vline(x=timestep, line_dash="dash", line_color="red", opacity=0.7)
+    fig_reserves2.add_vline(x=timestep, line_dash="dash",
+                            line_color="red", opacity=0.7)
     fig_reserves2.update_layout(
         title="Number of Reserves Occupied over Time (more than 10 individuals)",
         xaxis_title="Timestep",
